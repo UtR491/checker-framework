@@ -1,7 +1,6 @@
-import org.checkerframework.checker.regex.qual.EnhancedRegex;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Arrays;
+import org.checkerframework.checker.regex.qual.EnhancedRegex;
 
 public class Dummy3 {
 
@@ -11,9 +10,8 @@ public class Dummy3 {
         Matcher matcher = PATTERN.matcher("hello");
         matcher.matches();
         System.out.printf("group count: %d%n", matcher.groupCount());
-        for (int i = 0; i<=matcher.groupCount(); i++) {
+        for (int i = 0; i <= matcher.groupCount(); i++) {
             System.out.printf("%d: %s%n", i, matcher.group(i));
         }
     }
-
 }

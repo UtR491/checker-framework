@@ -9,11 +9,10 @@ import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.TreeSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -209,6 +208,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         private final QualifierKind REGEX_KIND;
         /** Qualifier kind for the @{@link PartialRegex} annotation. */
         private final QualifierKind PARTIALREGEX_KIND;
+
         private final QualifierKind ENHANCEDREGEX_KIND;
         /**
          * Creates a RegexQualifierHierarchy from the given classes.
@@ -236,7 +236,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 return lhsValue <= rhsValue;
             } else if (subKind == PARTIALREGEX_KIND && superKind == PARTIALREGEX_KIND) {
                 return AnnotationUtils.areSame(subAnno, superAnno);
-            } else if(subKind == ENHANCEDREGEX_KIND && superKind == ENHANCEDREGEX_KIND) {
+            } else if (subKind == ENHANCEDREGEX_KIND && superKind == ENHANCEDREGEX_KIND) {
                 return AnnotationUtils.areSame(superAnno, subAnno);
             }
             throw new BugInCF("Unexpected qualifiers: %s %s", subAnno, superAnno);
@@ -267,12 +267,13 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 return a1;
             } else if (qualifierKind2 == PARTIALREGEX_KIND || qualifierKind2 == REGEX_KIND) {
                 return a2;
-            } else if(qualifierKind1 == ENHANCEDREGEX_KIND && qualifierKind2 == ENHANCEDREGEX_KIND) {
+            } else if (qualifierKind1 == ENHANCEDREGEX_KIND
+                    && qualifierKind2 == ENHANCEDREGEX_KIND) {
                 ArrayList<Integer> value1 = getNonNullGroups(a1);
                 ArrayList<Integer> value2 = getNonNullGroups(a2);
-                if(value1.containsAll(value2)) {
+                if (value1.containsAll(value2)) {
                     return a1;
-                } else if(value2.containsAll(value1)) {
+                } else if (value2.containsAll(value1)) {
                     return a2;
                 }
             }
@@ -304,12 +305,13 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 return a1;
             } else if (qualifierKind2 == PARTIALREGEX_KIND || qualifierKind2 == REGEX_KIND) {
                 return a2;
-            } else if(qualifierKind1 == ENHANCEDREGEX_KIND && qualifierKind2 == ENHANCEDREGEX_KIND) {
+            } else if (qualifierKind1 == ENHANCEDREGEX_KIND
+                    && qualifierKind2 == ENHANCEDREGEX_KIND) {
                 ArrayList<Integer> value1 = getNonNullGroups(a1);
                 ArrayList<Integer> value2 = getNonNullGroups(a2);
-                if(value1.containsAll(value2)) {
+                if (value1.containsAll(value2)) {
                     return a2;
-                } else if(value2.containsAll(value1)) {
+                } else if (value2.containsAll(value1)) {
                     return a1;
                 }
             }
@@ -342,11 +344,10 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     public ArrayList<Integer> getNonNullGroups(AnnotationMirror anno) {
         AnnotationValue nonNullGroupsValue =
                 AnnotationUtils.getElementValuesWithDefaults(anno).get(enhancedRegexValueElement);
-        if(nonNullGroupsValue != null) {
-            int [] array = (int []) nonNullGroupsValue.getValue();
+        if (nonNullGroupsValue != null) {
+            int[] array = (int[]) nonNullGroupsValue.getValue();
             ArrayList<Integer> ret = new ArrayList<>();
-            for(int e : array)
-                ret.add(e);
+            for (int e : array) ret.add(e);
             return ret;
         }
         return new ArrayList<>();
@@ -373,8 +374,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 if (squareBracketOpen > 0) {
                     nonNullGroups.remove(group);
                     System.out.println("Removing group " + group + " because it is inside []");
-                }
-                else if (i != 0 && regexp.charAt(i - 1) == '|') {
+                } else if (i != 0 && regexp.charAt(i - 1) == '|') {
                     nonNullGroups.remove(group);
                     System.out.println("Removing group " + group + " because it is preceded by |");
                 }
@@ -384,7 +384,11 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 System.out.println("Group " + popped + " is now closed.");
                 if (i != regexp.length() - 1
                         && "*?|".contains(Character.toString(regexp.charAt(i + 1)))) {
-                    System.out.println("Removing group " + popped + " because it is followed by " + regexp.charAt(i+1));
+                    System.out.println(
+                            "Removing group "
+                                    + popped
+                                    + " because it is followed by "
+                                    + regexp.charAt(i + 1));
                     nonNullGroups.remove(popped);
                 }
             } else if (regexp.charAt(i) == '[') {
@@ -438,7 +442,9 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
          */
         @Override
         public Void visitLiteral(LiteralTree tree, AnnotatedTypeMirror type) {
-            System.out.println("visitLiteral function inside regexannotatedtypefactory the literal is " + tree.getValue().toString());
+            System.out.println(
+                    "visitLiteral function inside regexannotatedtypefactory the literal is "
+                            + tree.getValue().toString());
             String regex = null;
             if (tree.getKind() == Tree.Kind.STRING_LITERAL) {
                 regex = (String) tree.getValue();
@@ -446,23 +452,22 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 regex = Character.toString((Character) tree.getValue());
             }
             if (!type.isAnnotatedInHierarchy(REGEX)) {
-//                System.out.println("Marking the regex annotation");
-//                if (regex != null) {
-//                    if (RegexUtil.isRegex(regex)) {
-//                        int groupCount = getGroupCount(regex);
-//                        System.out.println("Group count is " + groupCount);
-//                        type.addAnnotation(createRegexAnnotation(groupCount));
-//                    } else {
-//                        type.addAnnotation(createPartialRegexAnnotation(regex));
-//                    }
-//                }
+                //                System.out.println("Marking the regex annotation");
+                //                if (regex != null) {
+                //                    if (RegexUtil.isRegex(regex)) {
+                //                        int groupCount = getGroupCount(regex);
+                //                        System.out.println("Group count is " + groupCount);
+                //                        type.addAnnotation(createRegexAnnotation(groupCount));
+                //                    } else {
+                //                        type.addAnnotation(createPartialRegexAnnotation(regex));
+                //                    }
+                //                }
                 System.out.println("Marking the enhanced regex annotation");
                 if (regex != null) {
                     if (RegexUtil.isRegex(regex)) {
                         TreeSet<Integer> nonNullGroups = getNonNullGroups(regex);
                         System.out.print("The nonNullGroups : ");
-                        for(int e : nonNullGroups)
-                            System.out.print(e + " ");
+                        for (int e : nonNullGroups) System.out.print(e + " ");
                         ArrayList<Integer> nonNulls = new ArrayList<>(nonNullGroups);
                         nonNulls.add(getGroupCount(regex));
                         type.addAnnotation(createEnhancedRegexAnnotation(nonNulls));
@@ -472,8 +477,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 }
             }
             Set<AnnotationMirror> sets = type.getAnnotations();
-            for(AnnotationMirror s : sets)
-                System.out.print(s.toString() + ", ");
+            for (AnnotationMirror s : sets) System.out.print(s.toString() + ", ");
 
             return super.visitLiteral(tree, type);
         }
@@ -588,7 +592,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         private String getPartialRegexValue(AnnotatedTypeMirror type) {
             return (String)
                     AnnotationUtils.getElementValuesWithDefaults(
-                            type.getAnnotation(PartialRegex.class))
+                                    type.getAnnotation(PartialRegex.class))
                             .get(partialRegexValue)
                             .getValue();
         }

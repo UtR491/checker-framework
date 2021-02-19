@@ -22,7 +22,6 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.regex.RegexAnnotatedTypeFactory;
 import org.checkerframework.checker.regex.RegexChecker;
 import org.checkerframework.checker.regex.qual.EnhancedRegex;
-import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
@@ -399,7 +398,7 @@ public class NullnessTransfer
                     regexTypeFactory.getAnnotationMirror(receiver.getTree(), EnhancedRegex.class);
             if (receiverType != null) {
                 ArrayList<Integer> nonNullGroups = regexTypeFactory.getNonNullGroups(receiverType);
-                int annoGroup = nonNullGroups.get(nonNullGroups.size()-1);
+                int annoGroup = nonNullGroups.get(nonNullGroups.size() - 1);
                 ExpressionTree param = methodArgs.get(0);
                 if (param != null && param.getKind() == Tree.Kind.INT_LITERAL) {
                     LiteralTree paramVal = (LiteralTree) param;
