@@ -10,6 +10,10 @@ Nullness Checker error message key changes:
    `initialization.fields.uninitialized` on the class, if there is no
    explicitly-written constructor.
 
+Signature Checker supports two new type qualifiers:
+ * `@CanonicalNameAndBinaryName`
+ * `@CanonicalNameOrPrimitiveType`
+
 **Implementation details:**
 
 Changes to protected fields in `OverrideChecker`:
@@ -17,6 +21,32 @@ Changes to protected fields in `OverrideChecker`:
  * Renamed `methodReference` => `isMethodReference`
  * Renamed `overridingType` => `overriderType`
  * Renamed `overridingReturnType` => `overriderReturnType`
+
+Changes to JavaExpression parsing:
+ * The signatures of these methods changed; see Javadoc.
+    * `JavaExpressionParseUtil#parse`
+    * `DependentTypesHelper#standardizeString`
+ * These methods moved:
+    * `GenericAnnotatedTypeFactory#standardizeAnnotationFromContract` => `DependentTypesHelper`
+    * `JavaExpressionParseUtil#fromVariableTree` => `JavaExpression`
+
+Changes to JavaExpressionContext:
+ * New method JavaExpressionContext#buildContextForMethodDeclaration(MethodTree, SourceChecker)
+   replaces all overloads of buildContextForMethodDeclaration.
+
+Parsing a Java expression no longer requires the formal parameters
+`AnnotationProvider provider` or `boolean allowNonDeterministic`.  Methods
+in `JavaExpression` with simplified signatures include
+ * `fromArrayAccess`
+ * `fromNodeFieldAccess`
+ * `fromNode`
+ * `fromTree`
+ * `getParametersOfEnclosingMethod`
+ * `getReceiver`
+
+`CFAbstractStore.insertValue` does nothing if passed a nondeterministic
+expression.  Use new method `CFAbstractStore.insertValuePermitNondeterministic`
+to map a nondeterministic expression to a value.
 
 **Closed issues:**
 
