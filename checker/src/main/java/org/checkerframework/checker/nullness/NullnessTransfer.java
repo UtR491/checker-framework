@@ -5,6 +5,7 @@ import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.regex.RegexAnnotatedTypeFactory;
 import org.checkerframework.checker.regex.RegexChecker;
+import org.checkerframework.checker.regex.qual.EnhancedRegex;
 import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
@@ -394,14 +396,15 @@ public class NullnessTransfer
         // verified by the RegexChecker.
         if (regexTypeFactory != null && regexTypeFactory.isMatcherGroup(n)) {
             AnnotationMirror receiverType =
-                    regexTypeFactory.getAnnotationMirror(receiver.getTree(), Regex.class);
+                    regexTypeFactory.getAnnotationMirror(receiver.getTree(), EnhancedRegex.class);
             if (receiverType != null) {
-                int annoGroup = regexTypeFactory.getGroupCount(receiverType);
+                ArrayList<Integer> nonNullGroups = regexTypeFactory.getNonNullGroups(receiverType);
+                int annoGroup = nonNullGroups.get(nonNullGroups.size()-1);
                 ExpressionTree param = methodArgs.get(0);
                 if (param != null && param.getKind() == Tree.Kind.INT_LITERAL) {
                     LiteralTree paramVal = (LiteralTree) param;
                     int paramGroup = (Integer) paramVal.getValue();
-                    if (paramGroup <= annoGroup) {
+                    if (paramGroup <= annoGroup && nonNullGroups.contains(paramGroup)) {
                         makeNonNull(result, n);
                         refineToNonNull(result);
                     }

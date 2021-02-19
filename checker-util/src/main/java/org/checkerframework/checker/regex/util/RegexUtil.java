@@ -2,6 +2,7 @@
 
 package org.checkerframework.checker.regex.util;
 
+import java.util.HashSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
@@ -144,6 +145,24 @@ public final class RegexUtil {
     @EnsuresQualifierIf(result = true, expression = "#1", qualifier = Regex.class)
     public static boolean isRegex(String s) {
         return isRegex(s, 0);
+    }
+
+    @Pure
+    @EnsuresQualifierIf(result = true, expression = "#1", qualifier = Regex.class)
+    public static boolean isRegex(String s, HashSet<Integer> groups) {
+        Pattern p;
+        try {
+            p = Pattern.compile(s);
+        } catch (PatternSyntaxException e) {
+            return false;
+        }
+        for (int group : groups) {
+            if (group > getGroupCount(p)) return false;
+            if (isOptional(p, group)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -329,5 +348,41 @@ public final class RegexUtil {
     @Pure
     private static int getGroupCount(Pattern p) {
         return p.matcher("").groupCount();
+    }
+
+    private static boolean isOptional(Pattern p, int group) {
+        String s = p.toString();
+        int counter = 0;
+        int start = -1;
+        int squareBracketBalance = 0;
+        for (int i = 0; i < s.length(); ++i) {
+            if (s.charAt(i) == '(') counter += 1;
+
+            if (counter == group) {
+                start = i;
+                break;
+            }
+            if (s.charAt(i) == '[') squareBracketBalance += 1;
+            else if (s.charAt(i) == ']') squareBracketBalance -= 1;
+        }
+        // The capturing group in inside square brackets, so it is optional.
+        if (squareBracketBalance > 0) return true;
+
+        int balance = 1;
+        int end = -1;
+        for (int i = start + 1; i < s.length(); ++i) {
+            if (s.charAt(i) == '(') balance += 1;
+            else if (s.charAt(i) == ')') balance -= 1;
+
+            if (balance == 0) {
+                end = i + 1;
+                break;
+            }
+        }
+        if ((start != 0 && s.charAt(start - 1) == '|')
+                || s.charAt(end) == '|'
+                || s.charAt(end) == '?'
+                || s.charAt(end) == '*') return true;
+        else return false;
     }
 }
