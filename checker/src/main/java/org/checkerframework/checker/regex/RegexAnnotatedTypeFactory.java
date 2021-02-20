@@ -9,6 +9,7 @@ import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.lang.model.element.AnnotationMirror;
@@ -16,6 +17,7 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
+import org.checkerframework.checker.regex.qual.EnhancedRegex;
 import org.checkerframework.checker.regex.qual.PartialRegex;
 import org.checkerframework.checker.regex.qual.PolyRegex;
 import org.checkerframework.checker.regex.qual.Regex;
@@ -94,10 +96,20 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     protected final AnnotationMirror UNKNOWNREGEX =
             AnnotationBuilder.fromClass(elements, UnknownRegex.class);
 
+    protected final AnnotationMirror ENHANCEDREGEX =
+            AnnotationBuilder.fromClass(elements, EnhancedRegex.class);
+
     /** The method that returns the value element of a {@code @Regex} annotation. */
     protected final ExecutableElement regexValueElement =
             TreeUtils.getMethod(
                     "org.checkerframework.checker.regex.qual.Regex", "value", 0, processingEnv);
+
+    protected final ExecutableElement enhancedRegexValueElement =
+            TreeUtils.getMethod(
+                    "org.checkerframework.checker.regex.qual.EnhancedRegex",
+                    "value",
+                    0,
+                    processingEnv);
 
     /** The {@code Matcher.group} method. */
     protected final ExecutableElement group =
@@ -160,6 +172,14 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         return builder.build();
     }
 
+    AnnotationMirror createEnhancedRegexAnnotation(List<Integer> nonNullGroups) {
+        AnnotationBuilder builder = new AnnotationBuilder(processingEnv, EnhancedRegex.class);
+        if (nonNullGroups.size() > 1) {
+            builder.setValue("value", nonNullGroups);
+        }
+        return builder.build();
+    }
+
     @Override
     protected QualifierHierarchy createQualifierHierarchy() {
         return new RegexQualifierHierarchy(this.getSupportedTypeQualifiers(), elements);
@@ -187,6 +207,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         private final QualifierKind REGEX_KIND;
         /** Qualifier kind for the @{@link PartialRegex} annotation. */
         private final QualifierKind PARTIALREGEX_KIND;
+
+        private final QualifierKind ENHANCEDREGEX_KIND;
         /**
          * Creates a RegexQualifierHierarchy from the given classes.
          *
@@ -198,6 +220,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             super(qualifierClasses, elements);
             REGEX_KIND = getQualifierKind(REGEX);
             PARTIALREGEX_KIND = getQualifierKind(PARTIALREGEX);
+            ENHANCEDREGEX_KIND = getQualifierKind(ENHANCEDREGEX);
         }
 
         @Override
@@ -212,6 +235,25 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 return lhsValue <= rhsValue;
             } else if (subKind == PARTIALREGEX_KIND && superKind == PARTIALREGEX_KIND) {
                 return AnnotationUtils.areSame(subAnno, superAnno);
+            } else if (subKind == ENHANCEDREGEX_KIND && superKind == ENHANCEDREGEX_KIND) {
+                List<Integer> rhsValue = getEnhancedRegexValue(subAnno);
+                List<Integer> lhsValue = getEnhancedRegexValue(superAnno);
+                int rhsGroupCount = rhsValue.get(rhsValue.size() - 1);
+                int lhsGroupCount = lhsValue.get(lhsValue.size() - 1);
+                if (rhsGroupCount == lhsGroupCount) {
+                    return rhsValue.containsAll(lhsValue);
+                } else if (rhsGroupCount > lhsGroupCount) {
+                    rhsValue.remove(rhsGroupCount);
+                    lhsValue.remove(lhsGroupCount);
+                    return rhsValue.containsAll(lhsValue);
+                } else {
+                    return false;
+                }
+            } else if (subKind == ENHANCEDREGEX_KIND && superKind == REGEX_KIND) {
+                List<Integer> rhsValue = getEnhancedRegexValue(subAnno);
+                int rhsGroupCount = rhsValue.get(rhsValue.size() - 1);
+                int lhsGroupCount = getRegexValue(superAnno);
+                return lhsGroupCount <= rhsGroupCount;
             }
             throw new BugInCF("Unexpected qualifiers: %s %s", subAnno, superAnno);
         }
@@ -237,9 +279,48 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 } else {
                     return UNKNOWNREGEX;
                 }
-            } else if (qualifierKind1 == PARTIALREGEX_KIND || qualifierKind1 == REGEX_KIND) {
+            } else if (qualifierKind1 == ENHANCEDREGEX_KIND
+                    && qualifierKind2 == ENHANCEDREGEX_KIND) {
+                List<Integer> value1 = getEnhancedRegexValue(a1);
+                List<Integer> value2 = getEnhancedRegexValue(a2);
+                int groupCount1 = value1.get(value1.size() - 1);
+                int groupCount2 = value2.get(value2.size() - 1);
+                if (groupCount1 == groupCount2) {
+                    if (value1.containsAll(value2)) {
+                        return a2;
+                    } else if (value2.containsAll(value1)) {
+                        return a1;
+                    } else {
+                        return REGEX;
+                    }
+                } else if (groupCount1 > groupCount2) {
+                    value1.remove(groupCount1);
+                    value2.remove(groupCount2);
+                    if (value1.containsAll(value2)) {
+                        return a2;
+                    } else if (value2.containsAll(value1)) {
+                        return a1;
+                    } else {
+                        return REGEX;
+                    }
+                } else {
+                    value1.remove(groupCount1);
+                    value2.remove(groupCount2);
+                    if (value1.containsAll(value2)) {
+                        return a2;
+                    } else if (value2.containsAll(value1)) {
+                        return a1;
+                    } else {
+                        return REGEX;
+                    }
+                }
+            } else if (qualifierKind1 == PARTIALREGEX_KIND
+                    || qualifierKind1 == REGEX_KIND
+                    || qualifierKind1 == ENHANCEDREGEX_KIND) {
                 return a1;
-            } else if (qualifierKind2 == PARTIALREGEX_KIND || qualifierKind2 == REGEX_KIND) {
+            } else if (qualifierKind2 == PARTIALREGEX_KIND
+                    || qualifierKind2 == REGEX_KIND
+                    || qualifierKind2 == ENHANCEDREGEX_KIND) {
                 return a2;
             }
             throw new BugInCF("Unexpected qualifiers: %s %s", a1, a2);
@@ -266,9 +347,44 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 } else {
                     return REGEXBOTTOM;
                 }
-            } else if (qualifierKind1 == PARTIALREGEX_KIND || qualifierKind1 == REGEX_KIND) {
+            } else if (qualifierKind1 == ENHANCEDREGEX_KIND
+                    && qualifierKind2 == ENHANCEDREGEX_KIND) {
+                List<Integer> value1 = getEnhancedRegexValue(a1);
+                List<Integer> value2 = getEnhancedRegexValue(a2);
+                int groupCount1 = value1.get(value1.size() - 1);
+                int groupCount2 = value2.get(value2.size() - 1);
+                if (groupCount1 == groupCount2) {
+                    if (value1.containsAll(value2)) {
+                        return a1;
+                    } else if (value2.containsAll(value1)) {
+                        return a2;
+                    } else {
+                        return REGEXBOTTOM;
+                    }
+                } else if (groupCount1 > groupCount2) {
+                    value1.remove(groupCount1);
+                    value2.remove(groupCount2);
+                    if (value1.containsAll(value2)) {
+                        return a1;
+                    } else {
+                        return REGEXBOTTOM;
+                    }
+                } else {
+                    value1.remove(groupCount1);
+                    value2.remove(groupCount2);
+                    if (value2.containsAll(value1)) {
+                        return a2;
+                    } else {
+                        return REGEXBOTTOM;
+                    }
+                }
+            } else if (qualifierKind1 == PARTIALREGEX_KIND
+                    || qualifierKind1 == REGEX_KIND
+                    || qualifierKind1 == ENHANCEDREGEX_KIND) {
                 return a1;
-            } else if (qualifierKind2 == PARTIALREGEX_KIND || qualifierKind2 == REGEX_KIND) {
+            } else if (qualifierKind2 == PARTIALREGEX_KIND
+                    || qualifierKind2 == REGEX_KIND
+                    || qualifierKind2 == ENHANCEDREGEX_KIND) {
                 return a2;
             }
             throw new BugInCF("Unexpected qualifiers: %s %s", a1, a2);
@@ -281,6 +397,10 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                             .get(regexValueElement)
                             .getValue();
         }
+
+        private List<Integer> getEnhancedRegexValue(AnnotationMirror anno) {
+            return AnnotationUtils.getElementValueArray(anno, "value", Integer.class, false);
+        }
     }
 
     /**
@@ -288,19 +408,37 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
      * group count value.
      */
     public int getGroupCount(AnnotationMirror anno) {
-        AnnotationValue groupCountValue =
-                AnnotationUtils.getElementValuesWithDefaults(anno).get(regexValueElement);
-        // If group count value is null then there's no Regex annotation
-        // on the parameter so set the group count to 0. This would happen
-        // if a non-regex string is passed to Pattern.compile but warnings
-        // are suppressed.
-        return (groupCountValue == null) ? 0 : (Integer) groupCountValue.getValue();
+        if (anno.getAnnotationType().asElement().getSimpleName().contentEquals("Regex")) {
+            AnnotationValue groupCountValue =
+                    AnnotationUtils.getElementValuesWithDefaults(anno).get(regexValueElement);
+            // If group count value is null then there's no Regex annotation
+            // on the parameter so set the group count to 0. This would happen
+            // if a non-regex string is passed to Pattern.compile but warnings
+            // are suppressed.
+            if (groupCountValue != null) {
+                Object value = groupCountValue.getValue();
+                if (value instanceof Integer) return (Integer) value;
+            }
+        } else if (anno.getAnnotationType()
+                .asElement()
+                .getSimpleName()
+                .contentEquals("EnhancedRegex")) {
+            List<Integer> nonNullGroups =
+                    AnnotationUtils.getElementValueArray(anno, "value", Integer.class, false);
+            if (nonNullGroups != null) {
+                if (nonNullGroups.size() > 1) return nonNullGroups.get(nonNullGroups.size() - 1);
+                else throw new BugInCF("Size of the value array is less than 2.");
+            }
+        }
+        return 0;
     }
 
     /** Returns the number of groups in the given regex String. */
     public static int getGroupCount(@Regex String regexp) {
         return Pattern.compile(regexp).matcher("").groupCount();
     }
+
+    public static List<Integer> getNonNullGroups(@Regex String regexp) {}
 
     @Override
     public Set<AnnotationMirror> getWidenedAnnotations(
