@@ -10,7 +10,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf(UnknownRegex.class)
+@SubtypeOf(Regex.class)
 public @interface EnhancedRegex {
     int[] value() default {0, 0};
 }

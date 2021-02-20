@@ -238,15 +238,17 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             } else if (subKind == PARTIALREGEX_KIND && superKind == PARTIALREGEX_KIND) {
                 return AnnotationUtils.areSame(subAnno, superAnno);
             } else if (subKind == ENHANCEDREGEX_KIND && superKind == ENHANCEDREGEX_KIND) {
+                System.out.println("rhs is " + subAnno.toString());
                 List<Integer> rhsValue = getEnhancedRegexValue(subAnno);
+                System.out.println("lhs is " + superAnno.toString());
                 List<Integer> lhsValue = getEnhancedRegexValue(superAnno);
                 int rhsGroupCount = rhsValue.get(rhsValue.size() - 1);
                 int lhsGroupCount = lhsValue.get(lhsValue.size() - 1);
                 if (rhsGroupCount == lhsGroupCount) {
                     return rhsValue.containsAll(lhsValue);
                 } else if (rhsGroupCount > lhsGroupCount) {
-                    rhsValue.remove(rhsGroupCount);
-                    lhsValue.remove(lhsGroupCount);
+                    rhsValue.remove((Integer) rhsGroupCount);
+                    lhsValue.remove((Integer) lhsGroupCount);
                     return rhsValue.containsAll(lhsValue);
                 } else {
                     return false;
@@ -296,8 +298,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                         return REGEX;
                     }
                 } else if (groupCount1 > groupCount2) {
-                    value1.remove(groupCount1);
-                    value2.remove(groupCount2);
+                    value1.remove((Integer) groupCount1);
+                    value2.remove((Integer) groupCount2);
                     if (value1.containsAll(value2)) {
                         return a2;
                     } else if (value2.containsAll(value1)) {
@@ -306,8 +308,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                         return REGEX;
                     }
                 } else {
-                    value1.remove(groupCount1);
-                    value2.remove(groupCount2);
+                    value1.remove((Integer) groupCount1);
+                    value2.remove((Integer) groupCount2);
                     if (value1.containsAll(value2)) {
                         return a2;
                     } else if (value2.containsAll(value1)) {
@@ -364,16 +366,16 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                         return REGEXBOTTOM;
                     }
                 } else if (groupCount1 > groupCount2) {
-                    value1.remove(groupCount1);
-                    value2.remove(groupCount2);
+                    value1.remove((Integer) groupCount1);
+                    value2.remove((Integer) groupCount2);
                     if (value1.containsAll(value2)) {
                         return a1;
                     } else {
                         return REGEXBOTTOM;
                     }
                 } else {
-                    value1.remove(groupCount1);
-                    value2.remove(groupCount2);
+                    value1.remove((Integer) groupCount1);
+                    value2.remove((Integer) groupCount2);
                     if (value2.containsAll(value1)) {
                         return a2;
                     } else {
@@ -401,7 +403,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         }
 
         private List<Integer> getEnhancedRegexValue(AnnotationMirror anno) {
-            return AnnotationUtils.getElementValueArray(anno, "value", Integer.class, false);
+            return AnnotationUtils.getElementValueArray(anno, "value", Integer.class, true);
         }
     }
 
@@ -452,10 +454,10 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 group += 1;
                 System.out.println("Group " + group + " encountered.");
                 if (squareBracketOpen > 0) {
-                    nonNullGroups.remove(group);
+                    nonNullGroups.remove((Integer) group);
                     System.out.println("Removing group " + group + " because it is inside []");
                 } else if (i != 0 && regexp.charAt(i - 1) == '|') {
-                    nonNullGroups.remove(group);
+                    nonNullGroups.remove((Integer) group);
                     System.out.println("Removing group " + group + " because it is preceded by |");
                 }
                 openingIndices.push(group);
@@ -469,7 +471,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                                     + popped
                                     + " because it is followed by "
                                     + regexp.charAt(i + 1));
-                    nonNullGroups.remove(popped);
+                    nonNullGroups.remove((Integer) popped);
                 }
             } else if (regexp.charAt(i) == '[') {
                 squareBracketOpen += 1;
