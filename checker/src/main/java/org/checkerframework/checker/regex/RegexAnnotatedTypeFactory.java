@@ -7,6 +7,8 @@ import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -425,10 +427,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 .contentEquals("EnhancedRegex")) {
             List<Integer> nonNullGroups =
                     AnnotationUtils.getElementValueArray(anno, "value", Integer.class, false);
-            if (nonNullGroups != null) {
-                if (nonNullGroups.size() > 1) return nonNullGroups.get(nonNullGroups.size() - 1);
-                else throw new BugInCF("Size of the value array is less than 2.");
-            }
+            if (nonNullGroups.size() > 1) return nonNullGroups.get(nonNullGroups.size() - 1);
+            else throw new BugInCF("Size of the value array is less than 2.");
         }
         return 0;
     }
@@ -438,7 +438,52 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         return Pattern.compile(regexp).matcher("").groupCount();
     }
 
-    public static List<Integer> getNonNullGroups(@Regex String regexp) {}
+    public static List<Integer> getNonNullGroups(@Regex String regexp) {
+        List<Integer> nonNullGroups = new ArrayList<>();
+        for (int i = 0; i <= getGroupCount(regexp); i++) {
+            nonNullGroups.add(i);
+        }
+        ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
+        int group = 0;
+        int squareBracketOpen = 0;
+        for (int i = 0; i < regexp.length(); i++) {
+            System.out.println("Index " + i + " Character " + regexp.charAt(i));
+            if (regexp.charAt(i) == '(') {
+                group += 1;
+                System.out.println("Group " + group + " encountered.");
+                if (squareBracketOpen > 0) {
+                    nonNullGroups.remove(group);
+                    System.out.println("Removing group " + group + " because it is inside []");
+                } else if (i != 0 && regexp.charAt(i - 1) == '|') {
+                    nonNullGroups.remove(group);
+                    System.out.println("Removing group " + group + " because it is preceded by |");
+                }
+                openingIndices.push(group);
+            } else if (regexp.charAt(i) == ')') {
+                int popped = openingIndices.pop();
+                System.out.println("Group " + popped + " is now closed.");
+                if (i != regexp.length() - 1
+                        && "*?|".contains(Character.toString(regexp.charAt(i + 1)))) {
+                    System.out.println(
+                            "Removing group "
+                                    + popped
+                                    + " because it is followed by "
+                                    + regexp.charAt(i + 1));
+                    nonNullGroups.remove(popped);
+                }
+            } else if (regexp.charAt(i) == '[') {
+                squareBracketOpen += 1;
+            } else if (regexp.charAt(i) == ']') {
+                squareBracketOpen -= 1;
+            }
+        }
+        nonNullGroups.add(getGroupCount(regexp));
+        Collections.sort(nonNullGroups);
+        System.out.print("Final NonNullGroups array : ");
+        for (int e : nonNullGroups) System.out.print(e + " ");
+        System.out.println();
+        return nonNullGroups;
+    }
 
     @Override
     public Set<AnnotationMirror> getWidenedAnnotations(
@@ -491,8 +536,9 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 }
                 if (regex != null) {
                     if (RegexUtil.isRegex(regex)) {
-                        int groupCount = getGroupCount(regex);
-                        type.addAnnotation(createRegexAnnotation(groupCount));
+                        List<Integer> nonNullGroups = getNonNullGroups(regex);
+                        // type.addAnnotation(createRegexAnnotation(groupCount));
+                        type.addAnnotation(createEnhancedRegexAnnotation(nonNullGroups));
                     } else {
                         type.addAnnotation(createPartialRegexAnnotation(regex));
                     }
@@ -585,12 +631,15 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
                 final AnnotatedTypeMirror argType = getAnnotatedType(arg0);
                 Integer regexCount = getMinimumRegexCount(argType);
+                List<Integer> nonNullGroups = getMinimumNonNullGroups(argType);
                 AnnotationMirror bottomAnno =
                         getAnnotatedType(arg0).getAnnotation(RegexBottom.class);
 
                 if (regexCount != null) {
                     // Remove current @Regex annotation...
                     // ...and add a new one with the correct group count value.
+                    if (nonNullGroups != null)
+                        type.replaceAnnotation(createEnhancedRegexAnnotation(nonNullGroups));
                     type.replaceAnnotation(createRegexAnnotation(regexCount));
                 } else if (bottomAnno != null) {
                     type.replaceAnnotation(
@@ -627,36 +676,70 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
          * @return the Integer value of the Regex annotation (0 if no value exists)
          */
         private Integer getMinimumRegexCount(final AnnotatedTypeMirror type) {
-            final AnnotationMirror primaryRegexAnno = type.getAnnotation(Regex.class);
+            AnnotationMirror primaryRegexAnno = type.getAnnotation(Regex.class);
             if (primaryRegexAnno == null) {
-                switch (type.getKind()) {
-                    case TYPEVAR:
-                        return getMinimumRegexCount(((AnnotatedTypeVariable) type).getUpperBound());
+                primaryRegexAnno = type.getAnnotation(EnhancedRegex.class);
+                if (primaryRegexAnno == null) {
+                    switch (type.getKind()) {
+                        case TYPEVAR:
+                            return getMinimumRegexCount(
+                                    ((AnnotatedTypeVariable) type).getUpperBound());
 
-                    case WILDCARD:
-                        return getMinimumRegexCount(
-                                ((AnnotatedWildcardType) type).getExtendsBound());
+                        case WILDCARD:
+                            return getMinimumRegexCount(
+                                    ((AnnotatedWildcardType) type).getExtendsBound());
 
-                    case INTERSECTION:
-                        Integer maxBound = null;
-                        for (final AnnotatedTypeMirror bound :
-                                ((AnnotatedIntersectionType) type).getBounds()) {
-                            Integer boundRegexNum = getMinimumRegexCount(bound);
-                            if (boundRegexNum != null) {
-                                if (maxBound == null || boundRegexNum > maxBound) {
-                                    maxBound = boundRegexNum;
+                        case INTERSECTION:
+                            Integer maxBound = null;
+                            for (final AnnotatedTypeMirror bound :
+                                    ((AnnotatedIntersectionType) type).getBounds()) {
+                                Integer boundRegexNum = getMinimumRegexCount(bound);
+                                if (boundRegexNum != null) {
+                                    if (maxBound == null || boundRegexNum > maxBound) {
+                                        maxBound = boundRegexNum;
+                                    }
                                 }
                             }
-                        }
-                        return maxBound;
-                    default:
-                        // Nothing to do for other cases.
+                            return maxBound;
+                        default:
+                            // Nothing to do for other cases.
+                    }
+                } else {
+                    return getGroupCount(primaryRegexAnno);
                 }
-
                 return null;
             }
 
             return getGroupCount(primaryRegexAnno);
+        }
+
+        private List<Integer> getMinimumNonNullGroups(final AnnotatedTypeMirror type) {
+            AnnotationMirror anno = type.getAnnotation(EnhancedRegex.class);
+            if (anno == null) {
+                switch (type.getKind()) {
+                    case TYPEVAR:
+                        return getMinimumNonNullGroups(
+                                ((AnnotatedTypeVariable) type).getUpperBound());
+
+                    case WILDCARD:
+                        return getMinimumNonNullGroups(
+                                ((AnnotatedWildcardType) type).getExtendsBound());
+
+                    case INTERSECTION:
+                        List<Integer> maxNonNull = null;
+                        for (final AnnotatedTypeMirror bound :
+                                ((AnnotatedIntersectionType) type).getBounds()) {
+                            List<Integer> boundNonNullGroups = getMinimumNonNullGroups(bound);
+                            if (maxNonNull == null || boundNonNullGroups.containsAll(maxNonNull)) {
+                                maxNonNull = boundNonNullGroups;
+                            }
+                        }
+                        return maxNonNull;
+                    default:
+                }
+                return null;
+            }
+            return AnnotationUtils.getElementValueArray(anno, "value", Integer.class, false);
         }
 
         //         This won't work correctly until flow sensitivity is supported by the
