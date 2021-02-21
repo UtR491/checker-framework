@@ -173,6 +173,16 @@ public final class RegexUtil {
         return getGroupCount(p) >= groups;
     }
 
+    /**
+     * Returns true if the argument is a syntactically valid regular expression with specified
+     * groups as definitely non-null.
+     *
+     * @param s string to check for being a regular expression
+     * @param groups list of expected non-null groups, and the number of groups as the last element.
+     * @return true iff s is a regular expression with {@code groups} groups
+     */
+    @Pure
+    @EnsuresQualifierIf(result = true, expression = "#1", qualifier = Regex.class)
     public static boolean isRegex(String s, List<Integer> groups) {
         Pattern p;
         try {
@@ -351,6 +361,12 @@ public final class RegexUtil {
         return p.matcher("").groupCount();
     }
 
+    /**
+     * Return the non-null groups in the argument.
+     *
+     * @param p pattern to be analysed.
+     * @return the groups that are non-null in the argument.
+     */
     private static List<Integer> getNonNullGroups(Pattern p) {
         String regexp = p.pattern();
         int n = getGroupCount(p);
