@@ -238,17 +238,15 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             } else if (subKind == PARTIALREGEX_KIND && superKind == PARTIALREGEX_KIND) {
                 return AnnotationUtils.areSame(subAnno, superAnno);
             } else if (subKind == ENHANCEDREGEX_KIND && superKind == ENHANCEDREGEX_KIND) {
-                System.out.println("rhs is " + subAnno.toString());
                 List<Integer> rhsValue = getEnhancedRegexValue(subAnno);
-                System.out.println("lhs is " + superAnno.toString());
                 List<Integer> lhsValue = getEnhancedRegexValue(superAnno);
                 int rhsGroupCount = rhsValue.get(rhsValue.size() - 1);
                 int lhsGroupCount = lhsValue.get(lhsValue.size() - 1);
+                rhsValue.remove((Integer) rhsGroupCount);
+                lhsValue.remove((Integer) lhsGroupCount);
                 if (rhsGroupCount == lhsGroupCount) {
                     return rhsValue.containsAll(lhsValue);
                 } else if (rhsGroupCount > lhsGroupCount) {
-                    rhsValue.remove((Integer) rhsGroupCount);
-                    lhsValue.remove((Integer) lhsGroupCount);
                     return rhsValue.containsAll(lhsValue);
                 } else {
                     return false;
@@ -289,6 +287,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 List<Integer> value2 = getEnhancedRegexValue(a2);
                 int groupCount1 = value1.get(value1.size() - 1);
                 int groupCount2 = value2.get(value2.size() - 1);
+                value1.remove((Integer) groupCount1);
+                value2.remove((Integer) groupCount2);
                 if (groupCount1 == groupCount2) {
                     if (value1.containsAll(value2)) {
                         return a2;
@@ -298,21 +298,13 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                         return REGEX;
                     }
                 } else if (groupCount1 > groupCount2) {
-                    value1.remove((Integer) groupCount1);
-                    value2.remove((Integer) groupCount2);
                     if (value1.containsAll(value2)) {
                         return a2;
-                    } else if (value2.containsAll(value1)) {
-                        return a1;
                     } else {
                         return REGEX;
                     }
                 } else {
-                    value1.remove((Integer) groupCount1);
-                    value2.remove((Integer) groupCount2);
-                    if (value1.containsAll(value2)) {
-                        return a2;
-                    } else if (value2.containsAll(value1)) {
+                    if (value2.containsAll(value1)) {
                         return a1;
                     } else {
                         return REGEX;
@@ -357,6 +349,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 List<Integer> value2 = getEnhancedRegexValue(a2);
                 int groupCount1 = value1.get(value1.size() - 1);
                 int groupCount2 = value2.get(value2.size() - 1);
+                value1.remove((Integer) groupCount1);
+                value2.remove((Integer) groupCount2);
                 if (groupCount1 == groupCount2) {
                     if (value1.containsAll(value2)) {
                         return a1;
@@ -366,16 +360,12 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                         return REGEXBOTTOM;
                     }
                 } else if (groupCount1 > groupCount2) {
-                    value1.remove((Integer) groupCount1);
-                    value2.remove((Integer) groupCount2);
                     if (value1.containsAll(value2)) {
                         return a1;
                     } else {
                         return REGEXBOTTOM;
                     }
                 } else {
-                    value1.remove((Integer) groupCount1);
-                    value2.remove((Integer) groupCount2);
                     if (value2.containsAll(value1)) {
                         return a2;
                     } else {
@@ -435,6 +425,12 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         return 0;
     }
 
+    public List<Integer> getNonNullGroups(AnnotationMirror anno) {
+        List<Integer> nonNullGroups =
+                AnnotationUtils.getElementValueArray(anno, "value", Integer.class, false);
+        return nonNullGroups;
+    }
+
     /** Returns the number of groups in the given regex String. */
     public static int getGroupCount(@Regex String regexp) {
         return Pattern.compile(regexp).matcher("").groupCount();
@@ -447,43 +443,34 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         }
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
         int group = 0;
-        int squareBracketOpen = 0;
+        boolean squareBracketOpen = false;
+        boolean escaped = false;
         for (int i = 0; i < regexp.length(); i++) {
-            System.out.println("Index " + i + " Character " + regexp.charAt(i));
-            if (regexp.charAt(i) == '(') {
+            if (!escaped && !squareBracketOpen && regexp.charAt(i) == '(') {
                 group += 1;
-                System.out.println("Group " + group + " encountered.");
-                if (squareBracketOpen > 0) {
+                if (i != 0 && regexp.charAt(i - 1) == '|') {
                     nonNullGroups.remove((Integer) group);
-                    System.out.println("Removing group " + group + " because it is inside []");
-                } else if (i != 0 && regexp.charAt(i - 1) == '|') {
-                    nonNullGroups.remove((Integer) group);
-                    System.out.println("Removing group " + group + " because it is preceded by |");
                 }
                 openingIndices.push(group);
-            } else if (regexp.charAt(i) == ')') {
+            } else if (!escaped && !squareBracketOpen && regexp.charAt(i) == ')') {
                 int popped = openingIndices.pop();
-                System.out.println("Group " + popped + " is now closed.");
                 if (i != regexp.length() - 1
                         && "*?|".contains(Character.toString(regexp.charAt(i + 1)))) {
-                    System.out.println(
-                            "Removing group "
-                                    + popped
-                                    + " because it is followed by "
-                                    + regexp.charAt(i + 1));
                     nonNullGroups.remove((Integer) popped);
                 }
-            } else if (regexp.charAt(i) == '[') {
-                squareBracketOpen += 1;
-            } else if (regexp.charAt(i) == ']') {
-                squareBracketOpen -= 1;
+            } else if (!escaped && !squareBracketOpen && regexp.charAt(i) == '[') {
+                squareBracketOpen = true;
+            } else if (squareBracketOpen && regexp.charAt(i) == ']') {
+                squareBracketOpen = false;
+            }
+            if (!escaped && regexp.charAt(i) == '\\') {
+                escaped = true;
+            } else if (escaped) {
+                escaped = false;
             }
         }
         nonNullGroups.add(getGroupCount(regexp));
         Collections.sort(nonNullGroups);
-        System.out.print("Final NonNullGroups array : ");
-        for (int e : nonNullGroups) System.out.print(e + " ");
-        System.out.println();
         return nonNullGroups;
     }
 
@@ -561,29 +548,52 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
                 Integer lGroupCount = getMinimumRegexCount(lExpr);
                 Integer rGroupCount = getMinimumRegexCount(rExpr);
+                List<Integer> lNonNullGroups = getMinimumNonNullGroups(lExpr);
+                List<Integer> rNonNullGroups = getMinimumNonNullGroups(rExpr);
                 boolean lExprRE = lGroupCount != null;
                 boolean rExprRE = rGroupCount != null;
+                boolean lExprERE = lNonNullGroups != null;
+                boolean rExprERE = rNonNullGroups != null;
                 boolean lExprPart = lExpr.hasAnnotation(PartialRegex.class);
                 boolean rExprPart = rExpr.hasAnnotation(PartialRegex.class);
                 boolean lExprPoly = lExpr.hasAnnotation(PolyRegex.class);
                 boolean rExprPoly = rExpr.hasAnnotation(PolyRegex.class);
 
-                if (lExprRE && rExprRE) {
+                if (lExprERE && rExprERE) {
+                    type.removeAnnotationInHierarchy(ENHANCEDREGEX);
+                    List<Integer> concatNonNullGroups = new ArrayList<>();
+                    lGroupCount = lNonNullGroups.get(lNonNullGroups.size() - 1);
+                    rGroupCount = rNonNullGroups.get(rNonNullGroups.size() - 1);
+                    int groupCount = lGroupCount + rGroupCount;
+                    concatNonNullGroups.add(0);
+                    lNonNullGroups.remove((Integer) 0);
+                    rNonNullGroups.remove((Integer) 0);
+                    lNonNullGroups.remove(Integer.valueOf(lGroupCount));
+                    rNonNullGroups.remove(Integer.valueOf(rGroupCount));
+                    concatNonNullGroups.addAll(lNonNullGroups);
+                    for (int r : rNonNullGroups) {
+                        concatNonNullGroups.add(r + lGroupCount);
+                    }
+                    concatNonNullGroups.add(groupCount);
+                    type.addAnnotation(createEnhancedRegexAnnotation(concatNonNullGroups));
+                } else if (lExprRE && rExprRE) {
                     // Remove current @Regex annotation...
                     type.removeAnnotationInHierarchy(REGEX);
                     // ...and add a new one with the correct group count value.
                     type.addAnnotation(createRegexAnnotation(lGroupCount + rGroupCount));
                 } else if ((lExprPoly && rExprPoly)
                         || (lExprPoly && rExprRE)
-                        || (lExprRE && rExprPoly)) {
+                        || (lExprRE && rExprPoly)
+                        || (lExprPoly && rExprERE)
+                        || (lExprERE && rExprPoly)) {
                     type.addAnnotation(PolyRegex.class);
                 } else if (lExprPart && rExprPart) {
                     String lRegex = getPartialRegexValue(lExpr);
                     String rRegex = getPartialRegexValue(rExpr);
                     String concat = lRegex + rRegex;
                     if (RegexUtil.isRegex(concat)) {
-                        int groupCount = getGroupCount(concat);
-                        type.addAnnotation(createRegexAnnotation(groupCount));
+                        List<Integer> nonNullGroups = getNonNullGroups(concat);
+                        type.addAnnotation(createEnhancedRegexAnnotation(nonNullGroups));
                     } else {
                         type.addAnnotation(createPartialRegexAnnotation(concat));
                     }
@@ -609,8 +619,31 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
                 final Integer lhsRegexCount = getMinimumRegexCount(lhs);
                 final Integer rhsRegexCount = getMinimumRegexCount(rhs);
+                final List<Integer> lhsNonNullGroups = getMinimumNonNullGroups(lhs);
+                final List<Integer> rhsNonNullGroups = getMinimumNonNullGroups(rhs);
 
-                if (lhsRegexCount != null && rhsRegexCount != null) {
+                if (lhsNonNullGroups != null && rhsNonNullGroups != null) {
+                    type.removeAnnotationInHierarchy(ENHANCEDREGEX);
+                    List<Integer> lNonNullGroups =
+                            getNonNullGroups(lhs.getAnnotation(EnhancedRegex.class));
+                    List<Integer> rNonNullGroups =
+                            getNonNullGroups(rhs.getAnnotation(EnhancedRegex.class));
+                    List<Integer> concatNonNullGroups = new ArrayList<>();
+                    int lGroupCount = lNonNullGroups.get(lNonNullGroups.size() - 1);
+                    int rGroupCount = rNonNullGroups.get(rNonNullGroups.size() - 1);
+                    int groupCount = lGroupCount + rGroupCount;
+                    concatNonNullGroups.add(0);
+                    lNonNullGroups.remove((Integer) 0);
+                    rNonNullGroups.remove((Integer) 0);
+                    lNonNullGroups.remove(Integer.valueOf(lGroupCount));
+                    rNonNullGroups.remove(Integer.valueOf(rGroupCount));
+                    concatNonNullGroups.addAll(lNonNullGroups);
+                    for (int r : rNonNullGroups) {
+                        concatNonNullGroups.add(r + lGroupCount);
+                    }
+                    concatNonNullGroups.add(groupCount);
+                    type.addAnnotation(createEnhancedRegexAnnotation(concatNonNullGroups));
+                } else if (lhsRegexCount != null && rhsRegexCount != null) {
                     int lCount = getGroupCount(lhs.getAnnotation(Regex.class));
                     int rCount = getGroupCount(rhs.getAnnotation(Regex.class));
                     type.removeAnnotationInHierarchy(REGEX);
@@ -642,7 +675,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     // ...and add a new one with the correct group count value.
                     if (nonNullGroups != null)
                         type.replaceAnnotation(createEnhancedRegexAnnotation(nonNullGroups));
-                    type.replaceAnnotation(createRegexAnnotation(regexCount));
+                    else type.replaceAnnotation(createRegexAnnotation(regexCount));
                 } else if (bottomAnno != null) {
                     type.replaceAnnotation(
                             AnnotationBuilder.fromClass(elements, RegexBottom.class));
