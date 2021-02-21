@@ -175,7 +175,12 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         return builder.build();
     }
 
-    /** Returns a new Enhanced Regex annotation with the given group count. */
+    /**
+     * Returns a new Enhanced Regex annotation with the given group count.
+     *
+     * @param nonNullGroups List of groups that are definitely non-null and total number of groups.
+     * @return EnhancedRegex annotation.
+     */
     AnnotationMirror createEnhancedRegexAnnotation(List<Integer> nonNullGroups) {
         AnnotationBuilder builder = new AnnotationBuilder(processingEnv, EnhancedRegex.class);
         if (nonNullGroups.size() > 1) {
@@ -414,7 +419,12 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                             .getValue();
         }
 
-        /** Gets the list of non-null groups out of an enhanced regex annotation. */
+        /**
+         * Gets the list of non-null groups out of an enhanced regex annotation.
+         *
+         * @param anno The annotation to extract the list from.
+         * @return The extracted list of non-null groups.
+         */
         private List<Integer> getEnhancedRegexValue(AnnotationMirror anno) {
             return AnnotationUtils.getElementValueArray(anno, "value", Integer.class, true);
         }
@@ -451,6 +461,9 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     /**
      * Returns the list of non-null groups from the EnhancedRegex annotation and default if
      * annotation is not present.
+     *
+     * @param anno The annotation from which the list is to be extracted.
+     * @return The extracted list of non-null groups.
      */
     public List<Integer> getNonNullGroups(AnnotationMirror anno) {
         return AnnotationUtils.getElementValueArray(anno, "value", Integer.class, true);

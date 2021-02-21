@@ -11,12 +11,14 @@ public class EnhancedRegexTest {
         // legal
         @EnhancedRegex({0, 1, 2, 2})
         String regexp3 = "(a?).(abc)";
-        @EnhancedRegex({0, 1, 2, 3}) // :: error: (assignment.type.incompatible)
+        @EnhancedRegex({0, 1, 2, 3})
+        // :: error: (assignment.type.incompatible)
         String regexp4 = "(a?).(abc)";
         // legal
         @EnhancedRegex({0, 2, 2})
         String regexp5 = "(a)?(abc)";
-        @EnhancedRegex({0, 1, 2, 2}) // :: error: (assignment.type.incompatible)
+        @EnhancedRegex({0, 1, 2, 2})
+        // :: error: (assignment.type.incompatible)
         String regexp6 = "(a)?(abc)";
     }
 }
