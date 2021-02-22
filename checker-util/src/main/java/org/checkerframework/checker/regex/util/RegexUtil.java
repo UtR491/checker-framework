@@ -378,14 +378,23 @@ public final class RegexUtil {
         int group = 0;
         boolean squareBracketOpen = false;
         boolean escaped = false;
+        boolean notCapturing = false;
         for (int i = 0; i < regexp.length(); i++) {
             if (!escaped && !squareBracketOpen && regexp.charAt(i) == '(') {
+                if (i != regexp.length() - 1 && regexp.charAt(i + 1) == '?') {
+                    notCapturing = true;
+                    continue;
+                }
                 group += 1;
                 if (i != 0 && regexp.charAt(i - 1) == '|') {
                     nonNullGroups.remove((Integer) group);
                 }
                 openingIndices.push(group);
             } else if (!escaped && !squareBracketOpen && regexp.charAt(i) == ')') {
+                if (notCapturing) {
+                    notCapturing = false;
+                    continue;
+                }
                 int popped = openingIndices.pop();
                 if (i != regexp.length() - 1
                         && "*?|".contains(Character.toString(regexp.charAt(i + 1)))) {
