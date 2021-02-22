@@ -807,6 +807,12 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             return getGroupCount(primaryRegexAnno);
         }
 
+        /**
+         * Minimum non-null groups from the annotation.
+         *
+         * @param type The annotation to extract the non-null groups from.
+         * @return The list of non-null groups.
+         */
         private List<Integer> getMinimumNonNullGroups(final AnnotatedTypeMirror type) {
             AnnotationMirror anno = type.getAnnotation(EnhancedRegex.class);
             if (anno == null) {
