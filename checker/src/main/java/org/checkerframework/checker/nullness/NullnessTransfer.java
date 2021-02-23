@@ -401,7 +401,6 @@ public class NullnessTransfer
             if (receiverType != null) {
                 int annoGroup = regexTypeFactory.getGroupCount(receiverType);
                 List<Integer> nonNullGroups = regexTypeFactory.getNonNullGroups(receiverType);
-                nonNullGroups.remove((Integer) annoGroup);
                 ExpressionTree param = methodArgs.get(0);
                 if (param != null && param.getKind() == Tree.Kind.INT_LITERAL) {
                     LiteralTree paramVal = (LiteralTree) param;

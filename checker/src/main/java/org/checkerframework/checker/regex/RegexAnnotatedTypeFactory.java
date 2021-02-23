@@ -181,6 +181,13 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
      * @param nonNullGroups list of groups that are definitely non-null and total number of groups
      * @return an EnhancedRegex annotation
      */
+    /**
+     * Returns a new Enhanced Regex annotation with the given group count and non-null groups.
+     *
+     * @param groupCount number of capturing groups in the regular expression.
+     * @param nonNullGroups list of groups that are definitely non-null and total number of groups
+     * @return an EnhancedRegex annotation
+     */
     AnnotationMirror createEnhancedRegexAnnotation(int groupCount, List<Integer> nonNullGroups) {
         AnnotationBuilder builder = new AnnotationBuilder(processingEnv, EnhancedRegex.class);
         builder.setValue("groups", groupCount);
