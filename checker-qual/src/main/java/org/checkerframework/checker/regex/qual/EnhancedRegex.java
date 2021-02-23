@@ -15,11 +15,15 @@ import org.checkerframework.framework.qual.SubtypeOf;
  *
  * <p>For example the regular expression {@code "(abc)?(cde)"} will be annotated with {@code
  * EnhancedRegex({0, 2, 2})}
+ *
+ * @checker_framework.manual #regex-checker Regex Checker
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf(Regex.class)
 public @interface EnhancedRegex {
-    int[] value() default {0, 0};
+    int groups() default 0;
+
+    int[] nonNullGroups() default {};
 }

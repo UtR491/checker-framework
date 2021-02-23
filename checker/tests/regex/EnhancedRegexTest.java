@@ -6,18 +6,27 @@ public class EnhancedRegexTest {
         // legal
         @EnhancedRegex String regexp1 = "(a?).(abc)";
         // legal
-        @EnhancedRegex({0, 2})
+
+        @EnhancedRegex(groups = 2)
         String regexp2 = "(a?).(abc)";
         // legal
-        @EnhancedRegex({0, 1, 2, 2})
+        @EnhancedRegex(
+                groups = 2,
+                nonNullGroups = {1, 2})
         String regexp3 = "(a?).(abc)";
-        @EnhancedRegex({0, 1, 2, 3})
+        @EnhancedRegex(
+                groups = 3,
+                nonNullGroups = {1, 2})
         // :: error: (assignment.type.incompatible)
         String regexp4 = "(a?).(abc)";
         // legal
-        @EnhancedRegex({0, 2, 2})
+        @EnhancedRegex(
+                groups = 2,
+                nonNullGroups = {2})
         String regexp5 = "(a)?(abc)";
-        @EnhancedRegex({0, 1, 2, 2})
+        @EnhancedRegex(
+                groups = 2,
+                nonNullGroups = {1, 2})
         // :: error: (assignment.type.incompatible)
         String regexp6 = "(a)?(abc)";
     }

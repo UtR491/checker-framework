@@ -72,7 +72,7 @@ public class NullnessChecker extends InitializationChecker {
 
     /**
      * If this option is specified, the Regex Checker is run as a subchecker of the Nullness Checker
-     * to infer whether calls to {@code Matcher.group(int)} are valid or not.
+     * to infer whether calls to {@code Matcher.group(int)} will return NonNull Strings or not.
      */
     public static final String ENABLE_REGEX_CHECKER = "enableRegexChecker";
 

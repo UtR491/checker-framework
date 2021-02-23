@@ -369,9 +369,9 @@ public final class RegexUtil {
      */
     private static List<Integer> getNonNullGroups(Pattern p) {
         String regexp = p.pattern();
-        int n = getGroupCount(p);
         List<Integer> nonNullGroups = new ArrayList<>();
-        for (int i = 0; i <= n; i++) {
+        int n = getGroupCount(p);
+        for (int i = 1; i <= n; i++) {
             nonNullGroups.add(i);
         }
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
@@ -379,9 +379,12 @@ public final class RegexUtil {
         boolean squareBracketOpen = false;
         boolean escaped = false;
         boolean notCapturing = false;
+        boolean quoted = false;
         for (int i = 0; i < regexp.length(); i++) {
-            if (!escaped && !squareBracketOpen && regexp.charAt(i) == '(') {
-                if (i != regexp.length() - 1 && regexp.charAt(i + 1) == '?') {
+            if (!quoted && !escaped && !squareBracketOpen && regexp.charAt(i) == '(') {
+                if (i < regexp.length() - 2
+                        && regexp.charAt(i + 1) == '?'
+                        && regexp.charAt(i + 2) != '<') {
                     notCapturing = true;
                     continue;
                 }
@@ -405,13 +408,16 @@ public final class RegexUtil {
             } else if (squareBracketOpen && regexp.charAt(i) == ']') {
                 squareBracketOpen = false;
             }
+            if (escaped) {
+                if (regexp.charAt(i) == 'Q') quoted = true;
+                else if (quoted && regexp.charAt(i) == 'E') quoted = false;
+            }
             if (!escaped && regexp.charAt(i) == '\\') {
                 escaped = true;
             } else if (escaped) {
                 escaped = false;
             }
         }
-        nonNullGroups.add(n);
         Collections.sort(nonNullGroups);
         return nonNullGroups;
     }

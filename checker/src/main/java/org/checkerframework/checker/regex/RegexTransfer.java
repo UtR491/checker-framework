@@ -102,7 +102,7 @@ public class RegexTransfer extends CFTransfer {
             }
             AnnotationMirror enhancedRegexAnnotation =
                     factory.createEnhancedRegexAnnotation(
-                            new ArrayList<>(Arrays.asList(0, groupCount)));
+                            groupCount, new ArrayList<>(Arrays.asList(0, groupCount)));
             if (thenStore.getValue(firstParam) != null) thenStore.clearValue(firstParam);
             thenStore.insertValue(firstParam, enhancedRegexAnnotation);
             return newResult;
