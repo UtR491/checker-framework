@@ -190,7 +190,7 @@ public final class RegexUtil {
         } catch (PatternSyntaxException e) {
             return false;
         }
-        List<Integer> nonNullGroups = getNonNullGroups(p);
+        List<Integer> nonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
         groups.remove(Integer.valueOf(0));
         groups.remove(Integer.valueOf(getGroupCount(p)));
         nonNullGroups.remove(Integer.valueOf(0));
@@ -364,13 +364,12 @@ public final class RegexUtil {
     /**
      * Return the non-null groups in the argument.
      *
-     * @param p pattern to be analysed
-     * @return the groups that are non-null in the argument
+     * @param regexp pattern to be analysed.
+     * @param n number of capturing groups in the pattern.
+     * @return the groups that are non-null in the argument.
      */
-    private static List<Integer> getNonNullGroups(Pattern p) {
-        String regexp = p.pattern();
+    public static List<Integer> getNonNullGroups(String regexp, int n) {
         List<Integer> nonNullGroups = new ArrayList<>();
-        int n = getGroupCount(p);
         for (int i = 1; i <= n; i++) {
             nonNullGroups.add(i);
         }
