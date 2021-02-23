@@ -8,13 +8,13 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * If a type is annotated as {@code EnhancedRegex({0, a, b, c ... , n})}, then the runtime value is
- * a regular expression with n groups where groups numbered 0, a, b, c ... are guaranteed to match
- * some (possibly empty) part of a matching String provided that the regular expression itself
- * matched the String (i.e. group 0 has matched).
+ * If a type is annotated as {@code EnhancedRegex(groups = n, nonNullGroups = {a, b, c ... })}, then
+ * the runtime value is a regular expression with n groups where groups numbered 0, a, b, c ... are
+ * guaranteed to match some (possibly empty) part of a matching String provided that the regular
+ * expression itself matched the String (i.e. group 0 has matched).
  *
  * <p>For example the regular expression {@code "(abc)?(cde)"} will be annotated with {@code
- * EnhancedRegex({0, 2, 2})}
+ * EnhancedRegex(groups = 2, nonNullGroups = {2})}
  *
  * @checker_framework.manual #regex-checker Regex Checker
  */
