@@ -23,12 +23,18 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf(Regex.class)
 public @interface EnhancedRegex {
-    /** The number of groups in the regular expression. Defaults to 0. */
+    /**
+     * The number of groups in the regular expression. Defaults to 0.
+     *
+     * @return number of capturing groups in the pattern
+     */
     int groups() default 0;
 
     /**
      * The list of groups other than 0, that are guaranteed to be non-null provided the input String
      * matches the regular expression. Defaults to an empty list.
+     *
+     * @return list of non-null groups.
      */
     int[] nonNullGroups() default {};
 }
