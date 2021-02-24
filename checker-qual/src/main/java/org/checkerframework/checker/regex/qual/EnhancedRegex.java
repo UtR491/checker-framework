@@ -9,12 +9,12 @@ import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
  * If a type is annotated as {@code EnhancedRegex(groups = n, nonNullGroups = {a, b, c ... })}, then
- * the runtime value is a regular expression with n groups where groups numbered 0, a, b, c ... are
- * guaranteed to match some (possibly empty) part of a matching String provided that the regular
+ * the runtime value is a regular expression with at least n groups where groups numbered a, b, c...
+ * are guaranteed to match some (possibly empty) part of a matching String provided that the regular
  * expression itself matched the String (i.e. group 0 has matched).
  *
- * <p>For example the regular expression {@code "(abc)?(cde)"} will be annotated with {@code
- * EnhancedRegex(groups = 2, nonNullGroups = {2})}
+ * <p>For example the regular expression {@code "(abc)?(cde)"} has type {@code EnhancedRegex(groups
+ * = 2, nonNullGroups = {2})}
  *
  * @checker_framework.manual #regex-checker Regex Checker
  */
@@ -23,7 +23,12 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf(Regex.class)
 public @interface EnhancedRegex {
+    /** The number of groups in the regular expression. Defaults to 0. */
     int groups() default 0;
 
+    /**
+     * The list of groups other than 0, that are guaranteed to be non-null provided the input String
+     * matches the regular expression. Defaults to an empty list.
+     */
     int[] nonNullGroups() default {};
 }

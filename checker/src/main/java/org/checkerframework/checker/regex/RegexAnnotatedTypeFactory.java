@@ -184,7 +184,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     /**
      * Returns a new Enhanced Regex annotation with the given group count and non-null groups.
      *
-     * @param groupCount number of capturing groups in the regular expression.
+     * @param groupCount number of capturing groups in the regular expression
      * @param nonNullGroups list of groups that are definitely non-null and total number of groups
      * @return an EnhancedRegex annotation
      */
@@ -478,7 +478,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     /**
-     * Returns the list of groups other than 0, that are non-null in the given regex String.
+     * Returns a list groups other than 0, that are guaranteed to be non-null given that the regular
+     * expression matches the String.
      *
      * @param regexp the string to analyse
      * @return a list of non-null groups and the number of groups

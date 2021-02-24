@@ -4,7 +4,6 @@ package org.checkerframework.checker.regex.util;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -362,62 +361,123 @@ public final class RegexUtil {
     }
 
     /**
-     * Return the non-null groups in the argument.
+     * Returns a list groups other than 0, that are guaranteed to be non-null given that the regular
+     * expression matches the String.
      *
-     * @param regexp pattern to be analysed.
-     * @param n number of capturing groups in the pattern.
-     * @return the groups that are non-null in the argument.
+     * @param regexp pattern to be analysed
+     * @param n number of capturing groups in the pattern
+     * @return the groups that are non-null in the argument
      */
     public static List<Integer> getNonNullGroups(String regexp, int n) {
         List<Integer> nonNullGroups = new ArrayList<>();
-        for (int i = 1; i <= n; i++) {
-            nonNullGroups.add(i);
-        }
+        for (int i = 1; i <= n; i++) nonNullGroups.add(i);
+
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
+        ArrayDeque<Boolean> openingWasGroup = new ArrayDeque<>();
+        int insideList = 0; // The part being traversed now is inside [...].
+        boolean quoted = false; // The part being traversed now is inside \Q ... \E.
+        boolean escaped = false; // The character just before the current one was '\'.
         int group = 0;
-        boolean squareBracketOpen = false;
-        boolean escaped = false;
-        boolean notCapturing = false;
-        boolean quoted = false;
-        for (int i = 0; i < regexp.length(); i++) {
-            if (!quoted && !escaped && !squareBracketOpen && regexp.charAt(i) == '(') {
-                if (i < regexp.length() - 2
-                        && regexp.charAt(i + 1) == '?'
-                        && regexp.charAt(i + 2) != '<') {
-                    notCapturing = true;
-                    continue;
+
+        /**
+         * If you encounter '(' and it is not inside a list or a quote and is not preceded by a '\',
+         * then it is a special group. If it is followed by a '?', it will be either a named
+         * capturing group or some other special construct. A named capturing group has a '<'
+         * followed by the '?'. The boolean stack is to figure out whether a ')' closes a capturing
+         * group or a special construct.
+         *
+         * <p>If you encounter a '\' and it is not inside a quote, it defines some sort of flag or
+         * special character. If you are inside a quote and '\' is followed immediately by 'E', it
+         * is there to mark the end of the quote so '\' is not there in a literal sense and can be
+         * considered as escaped.
+         *
+         * <p>If you are not inside a quote and you encounter a '[' and it was not preceded by a
+         * '\', it marks the beginning of a literal list. Skip one character just after '[' to make
+         * sure you don't close an empty list (if it is just followed by '\' make escaped true. We
+         * don't need a stack for square brackets because we don't have to enumerate them, we can
+         * just do it by balancing the number of '[' and ']' encountered.
+         *
+         * <p>If you are inside a list but not in a quote, you encounter a ']' and the previous
+         * character was not '\', it marks the end of a literal list.
+         */
+        final int length = regexp.length();
+        for (int i = 0; i < length; i++) {
+            if (regexp.charAt(i) == '(') {
+                if (!escaped && insideList == 0 && !quoted) {
+                    if (i != length - 1) {
+                        if (regexp.charAt(i + 1) == '?') {
+                            if (i < length - 2
+                                    && regexp.charAt(i + 2) == '<') { // named capturing group.
+                                group += 1;
+                                if (i != 0 && regexp.charAt(i - 1) == '|')
+                                    nonNullGroups.remove(Integer.valueOf(group));
+                                openingIndices.push(group);
+                                openingWasGroup.push(true);
+                            } else { // non capturing group.
+                                openingWasGroup.push(false);
+                            }
+                        } else { // unnamed capturing group.
+                            group += 1;
+                            if (i != 0 && regexp.charAt(i - 1) == '|')
+                                nonNullGroups.remove(Integer.valueOf(group));
+                            openingIndices.push(group);
+                            openingWasGroup.push(true);
+                        }
+                    }
+                } else if (escaped) { // escaped won't be true if quoted is true.
+                    escaped = false;
                 }
-                group += 1;
-                if (i != 0 && regexp.charAt(i - 1) == '|') {
-                    nonNullGroups.remove((Integer) group);
+            } else if (regexp.charAt(i) == ')') {
+                if (!escaped && insideList == 0 && !quoted) { // ending of a construct.
+                    boolean closesGroup = openingWasGroup.pop();
+                    if (closesGroup) {
+                        int value = openingIndices.pop();
+                        if (i != regexp.length() - 1
+                                && "?|*".contains(Character.toString(regexp.charAt(i + 1)))) {
+                            nonNullGroups.remove(Integer.valueOf(value));
+                        } else if (i < length - 2
+                                && regexp.charAt(i + 1) == '{'
+                                && regexp.charAt(i + 2) == '0') {
+                            nonNullGroups.remove(Integer.valueOf(value));
+                        }
+                    }
+                } else if (escaped) {
+                    escaped = false;
                 }
-                openingIndices.push(group);
-            } else if (!escaped && !squareBracketOpen && regexp.charAt(i) == ')') {
-                if (notCapturing) {
-                    notCapturing = false;
-                    continue;
+            } else if (regexp.charAt(i) == '\\') {
+                if (!quoted) {
+                    escaped =
+                            !escaped; // if it is already escaped, '\' will be matched, if not, now
+                    // escaped becomes true.
+                } else if (i != length - 1 && regexp.charAt(i + 1) == 'E') {
+                    escaped = true;
                 }
-                int popped = openingIndices.pop();
-                if (i != regexp.length() - 1
-                        && "*?|".contains(Character.toString(regexp.charAt(i + 1)))) {
-                    nonNullGroups.remove((Integer) popped);
+            } else if (regexp.charAt(i) == '[') {
+                if (!escaped && !quoted) {
+                    insideList += 1;
+                    if (regexp.charAt(++i) == '\\') escaped = true;
+                } else if (escaped) {
+                    escaped = false;
                 }
-            } else if (!escaped && !squareBracketOpen && regexp.charAt(i) == '[') {
-                squareBracketOpen = true;
-            } else if (squareBracketOpen && regexp.charAt(i) == ']') {
-                squareBracketOpen = false;
-            }
-            if (escaped) {
-                if (regexp.charAt(i) == 'Q') quoted = true;
-                else if (quoted && regexp.charAt(i) == 'E') quoted = false;
-            }
-            if (!escaped && regexp.charAt(i) == '\\') {
-                escaped = true;
-            } else if (escaped) {
-                escaped = false;
+            } else if (regexp.charAt(i) == ']') {
+                if (!quoted && !escaped && insideList != 0) {
+                    insideList -= 1;
+                } else if (escaped) {
+                    escaped = false;
+                }
+            } else if (regexp.charAt(i) == 'Q') {
+                if (!quoted && escaped) {
+                    escaped = false;
+                    quoted = true;
+                }
+                // :: error: (assignment.type.incompatible)
+            } else if (regexp.charAt(i) == 'E') {
+                if (quoted && escaped) {
+                    escaped = false;
+                    quoted = false;
+                }
             }
         }
-        Collections.sort(nonNullGroups);
         return nonNullGroups;
     }
 }
