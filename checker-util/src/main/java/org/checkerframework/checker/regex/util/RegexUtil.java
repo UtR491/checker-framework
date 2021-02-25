@@ -476,6 +476,8 @@ public final class RegexUtil {
                     escaped = false;
                     quoted = false;
                 }
+            } else {
+                if (escaped) escaped = false;
             }
         }
         return nonNullGroups;

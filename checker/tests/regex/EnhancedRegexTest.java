@@ -69,6 +69,11 @@ public class EnhancedRegexTest {
         @EnhancedRegex String s13c = "[a[a](abc)]]"; // (abc) is not a group.
         // :: error: (assignment.type.incompatible)
         @EnhancedRegex(groups = 1) String s13 = "[a[a](abc)]]";
+        // legal
+        @EnhancedRegex(
+                groups = 1,
+                nonNullGroups = {1})
+        String s = "\\\\include\\{(.*)\\}";
     }
 
     String s = "(abc)(def)?(?<alpha>alpha)?.";
