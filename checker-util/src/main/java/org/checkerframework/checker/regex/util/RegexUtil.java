@@ -369,7 +369,6 @@ public final class RegexUtil {
      * @return the groups that are non-null in the argument
      */
     public static List<Integer> getNonNullGroups(String regexp, int n) {
-        System.out.println("The regular expression to analyse is " + regexp);
         List<Integer> nonNullGroups = new ArrayList<>();
         for (int i = 1; i <= n; i++) nonNullGroups.add(i);
 
@@ -477,6 +476,8 @@ public final class RegexUtil {
                     escaped = false;
                     quoted = false;
                 }
+            } else {
+                if (escaped) escaped = false;
             }
         }
         return nonNullGroups;
