@@ -478,8 +478,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     /**
-     * Returns a list groups other than 0, that are guaranteed to be non-null given that the regular
-     * expression matches the String.
+     * Returns a list of groups other than 0, that are guaranteed to be non-null given that the
+     * regular expression matches the String.
      *
      * @param regexp the string to analyse
      * @return a list of non-null groups and the number of groups
