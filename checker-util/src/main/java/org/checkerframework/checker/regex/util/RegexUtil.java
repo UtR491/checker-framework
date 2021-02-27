@@ -11,6 +11,7 @@ import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.regex.qual.Regex;
+import org.checkerframework.checker.regex.qual.RegexNNGroups;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -181,7 +182,7 @@ public final class RegexUtil {
      * @return true iff s is a regular expression with {@code groups} groups
      */
     @Pure
-    @EnsuresQualifierIf(result = true, expression = "#1", qualifier = Regex.class)
+    @EnsuresQualifierIf(result = true, expression = "#1", qualifier = RegexNNGroups.class)
     public static boolean isRegex(String s, List<Integer> groups) {
         Pattern p;
         try {
@@ -190,12 +191,7 @@ public final class RegexUtil {
             return false;
         }
         List<Integer> nonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
-        groups.remove(Integer.valueOf(0));
-        groups.remove(Integer.valueOf(getGroupCount(p)));
-        nonNullGroups.remove(Integer.valueOf(0));
-        nonNullGroups.remove(Integer.valueOf(getGroupCount(p)));
-        if (nonNullGroups.containsAll(groups)) return true;
-        return false;
+        return nonNullGroups.containsAll(groups);
     }
 
     /**

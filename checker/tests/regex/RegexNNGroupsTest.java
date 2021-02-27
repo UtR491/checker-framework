@@ -4,32 +4,32 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.regex.qual.EnhancedRegex;
-import org.checkerframework.checker.regex.util.RegexUtil;
+import org.checkerframework.checker.regex.qual.RegexNNGroups;
 
-public class EnhancedRegexTest {
+public class RegexNNGroupsTest {
     void hierarchyTest() {
         // legal
-        @EnhancedRegex String regexp1 = "(a?).(abc)";
+        @RegexNNGroups String regexp1 = "(a?).(abc)";
         // legal
 
-        @EnhancedRegex(groups = 2) String regexp2 = "(a?).(abc)";
+        @RegexNNGroups(groups = 2)
+        String regexp2 = "(a?).(abc)";
         // legal
-        @EnhancedRegex(
+        @RegexNNGroups(
                 groups = 2,
                 nonNullGroups = {1, 2})
         String regexp3 = "(a?).(abc)";
-        @EnhancedRegex(
+        @RegexNNGroups(
                 groups = 3,
                 nonNullGroups = {1, 2})
         // :: error: (assignment.type.incompatible)
         String regexp4 = "(a?).(abc)";
         // legal
-        @EnhancedRegex(
+        @RegexNNGroups(
                 groups = 2,
                 nonNullGroups = {2})
         String regexp5 = "(a)?(abc)";
-        @EnhancedRegex(
+        @RegexNNGroups(
                 groups = 2,
                 nonNullGroups = {1, 2})
         // :: error: (assignment.type.incompatible)
@@ -37,40 +37,43 @@ public class EnhancedRegexTest {
     }
 
     void getNonNullImplementationTest() {
-        @EnhancedRegex(
+        @RegexNNGroups(
                 groups = 1,
                 nonNullGroups = {1})
         // :: error: (assignment.type.incompatible)
         String s3 = "(?>abc)";
-        @EnhancedRegex String s2 = "(?>abc)";
-        @EnhancedRegex(
+        @RegexNNGroups String s2 = "(?>abc)";
+        @RegexNNGroups(
                 groups = 2,
                 nonNullGroups = {1, 2})
         String s4 = "(?>(abc)(<alpha>alpha))";
+        @RegexNNGroups(groups = 2)
         // :: error: (assignment.type.incompatible)
-        @EnhancedRegex(groups = 2) String s5 = "[abc(def)](ghi)\\Q(abc)\\E";
-        @EnhancedRegex(
+        String s5 = "[abc(def)](ghi)\\Q(abc)\\E";
+        @RegexNNGroups(
                 groups = 1,
                 nonNullGroups = {1})
         String s7 = "[abc(def)](ghi)\\Q(abc)\\E";
-        @EnhancedRegex String s6 = "[a[a[a]]]";
-        @EnhancedRegex(
+        @RegexNNGroups String s6 = "[a[a[a]]]";
+        @RegexNNGroups(
                 groups = 1,
                 nonNullGroups = {1})
         // :: error: (assignment.type.incompatible)
         String s8 = "(abc){0}";
-        @EnhancedRegex(
+        @RegexNNGroups(
                 groups = 4,
                 nonNullGroups = {1, 2, 4})
         String s9 = "(?<g1>([abcdef]\\Qhello\\E))(?>(abc)*(def)).a\\Q(xyz)\\E";
+        @RegexNNGroups(groups = 1)
         // :: error: (assignment.type.incompatible)
-        @EnhancedRegex(groups = 1) String s12 = "[(abc)[xyz[^p-q]]]";
+        String s12 = "[(abc)[xyz[^p-q]]]";
         // legal
-        @EnhancedRegex String s13c = "[a[a](abc)]]"; // (abc) is not a group.
+        @RegexNNGroups String s13c = "[a[a](abc)]]"; // (abc) is not a group.
+        @RegexNNGroups(groups = 1)
         // :: error: (assignment.type.incompatible)
-        @EnhancedRegex(groups = 1) String s13 = "[a[a](abc)]]";
+        String s13 = "[a[a](abc)]]";
         // legal
-        @EnhancedRegex(
+        @RegexNNGroups(
                 groups = 1,
                 nonNullGroups = {1})
         String s = "\\\\include\\{(.*)\\}";
@@ -84,7 +87,7 @@ public class EnhancedRegexTest {
         Matcher m = p.matcher("abc");
         if (m.matches()) {
             List<Integer> nonNull = new ArrayList<>(Arrays.asList(1, 2, 3));
-            if (RegexUtil.isRegex(s, nonNull)) return m.group(3);
+            //            if (RegexUtil.isRegex(s, nonNull)) return m.group(3);
         }
         return "";
     }

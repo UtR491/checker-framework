@@ -7,7 +7,6 @@ import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,11 +18,11 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
-import org.checkerframework.checker.regex.qual.EnhancedRegex;
 import org.checkerframework.checker.regex.qual.PartialRegex;
 import org.checkerframework.checker.regex.qual.PolyRegex;
 import org.checkerframework.checker.regex.qual.Regex;
 import org.checkerframework.checker.regex.qual.RegexBottom;
+import org.checkerframework.checker.regex.qual.RegexNNGroups;
 import org.checkerframework.checker.regex.qual.UnknownRegex;
 import org.checkerframework.checker.regex.util.RegexUtil;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -53,7 +52,7 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
- * Adds {@link EnhancedRegex} or {@link Regex} to the type of tree, in the following cases:
+ * Adds {@link RegexNNGroups} or {@link Regex} to the type of tree, in the following cases:
  *
  * <ol>
  *   <li value="1">a {@code String} or {@code char} literal that is a valid regular expression
@@ -97,20 +96,28 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     /** The @{@link UnknownRegex} annotation. */
     protected final AnnotationMirror UNKNOWNREGEX =
             AnnotationBuilder.fromClass(elements, UnknownRegex.class);
-    /** The @{@link EnhancedRegex} annotation. */
-    protected final AnnotationMirror ENHANCEDREGEX =
-            AnnotationBuilder.fromClass(elements, EnhancedRegex.class);
+    /** The @{@link RegexNNGroups} annotation. */
+    protected final AnnotationMirror REGEXNNGROUPS =
+            AnnotationBuilder.fromClass(elements, RegexNNGroups.class);
 
     /** The method that returns the value element of a {@code @Regex} annotation. */
     protected final ExecutableElement regexValueElement =
             TreeUtils.getMethod(
                     "org.checkerframework.checker.regex.qual.Regex", "value", 0, processingEnv);
 
-    /** The method that returns the value element of a {@code @EnhancedRegex} annotation. */
-    protected final ExecutableElement enhancedRegexGroupCountElement =
+    /** The method that returns the groups element of a {@code @RegexNNGroups} annotation. */
+    protected final ExecutableElement regexNNGroupsGroupCountElement =
             TreeUtils.getMethod(
-                    "org.checkerframework.checker.regex.qual.EnhancedRegex",
+                    "org.checkerframework.checker.regex.qual.RegexNNGroups",
                     "groups",
+                    0,
+                    processingEnv);
+
+    /** The method that returns the nonNullGroups element of a {@code @RegexNNGroups} annotation */
+    protected final ExecutableElement regexNonNullGroupsElement =
+            TreeUtils.getMethod(
+                    "org.checkerframework.checker.regex.qual.RegexNNGroups",
+                    "nonNullGroups",
                     0,
                     processingEnv);
 
@@ -179,17 +186,17 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
      * Returns a new Enhanced Regex annotation with the given group count.
      *
      * @param nonNullGroups list of groups that are definitely non-null and total number of groups
-     * @return an EnhancedRegex annotation
+     * @return an RegexNNGroups annotation
      */
     /**
-     * Returns a new Enhanced Regex annotation with the given group count and non-null groups.
+     * Returns a new RegexNNGroups annotation with the given group count and non-null groups.
      *
      * @param groupCount number of capturing groups in the regular expression
      * @param nonNullGroups list of groups that are definitely non-null and total number of groups
-     * @return an EnhancedRegex annotation
+     * @return an RegexNNGroups annotation
      */
-    AnnotationMirror createEnhancedRegexAnnotation(int groupCount, List<Integer> nonNullGroups) {
-        AnnotationBuilder builder = new AnnotationBuilder(processingEnv, EnhancedRegex.class);
+    AnnotationMirror createRegexNNGroupsAnnotation(int groupCount, List<Integer> nonNullGroups) {
+        AnnotationBuilder builder = new AnnotationBuilder(processingEnv, RegexNNGroups.class);
         builder.setValue("groups", groupCount);
         builder.setValue("nonNullGroups", nonNullGroups);
         return builder.build();
@@ -222,8 +229,8 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         private final QualifierKind REGEX_KIND;
         /** Qualifier kind for the @{@link PartialRegex} annotation. */
         private final QualifierKind PARTIALREGEX_KIND;
-        /** Qualifier kind for the @{@link EnhancedRegex} annotation. */
-        private final QualifierKind ENHANCEDREGEX_KIND;
+        /** Qualifier kind for the @{@link RegexNNGroups} annotation. */
+        private final QualifierKind REGEXNNGROUPS_KIND;
         /**
          * Creates a RegexQualifierHierarchy from the given classes.
          *
@@ -235,7 +242,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             super(qualifierClasses, elements);
             REGEX_KIND = getQualifierKind(REGEX);
             PARTIALREGEX_KIND = getQualifierKind(PARTIALREGEX);
-            ENHANCEDREGEX_KIND = getQualifierKind(ENHANCEDREGEX);
+            REGEXNNGROUPS_KIND = getQualifierKind(REGEXNNGROUPS);
         }
 
         @Override
@@ -250,29 +257,27 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 return lhsValue <= rhsValue;
             } else if (subKind == PARTIALREGEX_KIND && superKind == PARTIALREGEX_KIND) {
                 return AnnotationUtils.areSame(subAnno, superAnno);
-            } else if (subKind == ENHANCEDREGEX_KIND && superKind == ENHANCEDREGEX_KIND) {
-                List<Integer> rhsValue = getEnhancedRegexNonNullGroups(subAnno);
-                List<Integer> lhsValue = getEnhancedRegexNonNullGroups(superAnno);
+            } else if (subKind == REGEXNNGROUPS_KIND && superKind == REGEXNNGROUPS_KIND) {
+                List<Integer> rhsValue = getRegexNonNullGroups(subAnno);
+                List<Integer> lhsValue = getRegexNonNullGroups(superAnno);
                 int rhsGroupCount = getGroupCount(subAnno);
                 int lhsGroupCount = getGroupCount(superAnno);
-                if (rhsGroupCount == lhsGroupCount) {
-                    // if number of groups is same and rhs is more specific (specifies more non null
-                    // groups) then it is a subtype of lhs.
-                    return rhsValue.containsAll(lhsValue);
-                } else if (rhsGroupCount > lhsGroupCount) {
-                    // if rhs specifies more groups than lhs and all the non null groups in rhs are
-                    // also non null in lhs then rhs is a subtype of lhs.
+                if (rhsGroupCount >= lhsGroupCount) {
+                    // if number of groups in rhs is at least as much as the number of groups in lhs
+                    // and rhs is more specific (specifies more non null groups) then it is a
+                    // subtype
+                    // of lhs.
                     return rhsValue.containsAll(lhsValue);
                 } else {
                     // if lhs specifies more groups than rhs then it is more specific and thus rhs
                     // is not a subtype of lhs.
                     return false;
                 }
-            } else if (subKind == ENHANCEDREGEX_KIND && superKind == REGEX_KIND) {
+            } else if (subKind == REGEXNNGROUPS_KIND && superKind == REGEX_KIND) {
                 int rhsGroupCount = getGroupCount(subAnno);
                 int lhsGroupCount = getRegexValue(superAnno);
-                // if the number of groups specified in the EnhancedRegex annotation is not greater
-                // than the number of groups present in the Regex annotation then EnhancedRegex is
+                // if the number of groups specified in the RegexNNGroups annotation is not greater
+                // than the number of groups present in the Regex annotation then RegexNNGroups is
                 // more specific and thus a subtype of Regex.
                 return lhsGroupCount <= rhsGroupCount;
             }
@@ -300,10 +305,10 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 } else {
                     return UNKNOWNREGEX;
                 }
-            } else if (qualifierKind1 == ENHANCEDREGEX_KIND
-                    && qualifierKind2 == ENHANCEDREGEX_KIND) {
-                List<Integer> value1 = getEnhancedRegexNonNullGroups(a1);
-                List<Integer> value2 = getEnhancedRegexNonNullGroups(a2);
+            } else if (qualifierKind1 == REGEXNNGROUPS_KIND
+                    && qualifierKind2 == REGEXNNGROUPS_KIND) {
+                List<Integer> value1 = getRegexNonNullGroups(a1);
+                List<Integer> value2 = getRegexNonNullGroups(a2);
                 int groupCount1 = getGroupCount(a1);
                 int groupCount2 = getGroupCount(a2);
                 if (groupCount1 == groupCount2) {
@@ -337,11 +342,11 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 }
             } else if (qualifierKind1 == PARTIALREGEX_KIND
                     || qualifierKind1 == REGEX_KIND
-                    || qualifierKind1 == ENHANCEDREGEX_KIND) {
+                    || qualifierKind1 == REGEXNNGROUPS_KIND) {
                 return a1;
             } else if (qualifierKind2 == PARTIALREGEX_KIND
                     || qualifierKind2 == REGEX_KIND
-                    || qualifierKind2 == ENHANCEDREGEX_KIND) {
+                    || qualifierKind2 == REGEXNNGROUPS_KIND) {
                 return a2;
             }
             throw new BugInCF("Unexpected qualifiers: %s %s", a1, a2);
@@ -368,10 +373,10 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 } else {
                     return REGEXBOTTOM;
                 }
-            } else if (qualifierKind1 == ENHANCEDREGEX_KIND
-                    && qualifierKind2 == ENHANCEDREGEX_KIND) {
-                List<Integer> value1 = getEnhancedRegexNonNullGroups(a1);
-                List<Integer> value2 = getEnhancedRegexNonNullGroups(a2);
+            } else if (qualifierKind1 == REGEXNNGROUPS_KIND
+                    && qualifierKind2 == REGEXNNGROUPS_KIND) {
+                List<Integer> value1 = getRegexNonNullGroups(a1);
+                List<Integer> value2 = getRegexNonNullGroups(a2);
                 int groupCount1 = getGroupCount(a1);
                 int groupCount2 = getGroupCount(a2);
                 // Similar reasoning as in lub.
@@ -398,11 +403,11 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 }
             } else if (qualifierKind1 == PARTIALREGEX_KIND
                     || qualifierKind1 == REGEX_KIND
-                    || qualifierKind1 == ENHANCEDREGEX_KIND) {
+                    || qualifierKind1 == REGEXNNGROUPS_KIND) {
                 return a1;
             } else if (qualifierKind2 == PARTIALREGEX_KIND
                     || qualifierKind2 == REGEX_KIND
-                    || qualifierKind2 == ENHANCEDREGEX_KIND) {
+                    || qualifierKind2 == REGEXNNGROUPS_KIND) {
                 return a2;
             }
             throw new BugInCF("Unexpected qualifiers: %s %s", a1, a2);
@@ -422,8 +427,9 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
          * @param anno the annotation to extract the list from
          * @return the extracted list of non-null groups
          */
-        private List<Integer> getEnhancedRegexNonNullGroups(AnnotationMirror anno) {
-            return AnnotationUtils.getElementValueArray(anno, "nonNullGroups", Integer.class, true);
+        private List<Integer> getRegexNonNullGroups(AnnotationMirror anno) {
+            return AnnotationUtils.getElementValueArray(
+                    anno, regexNonNullGroupsElement, Integer.class, true);
         }
     }
 
@@ -444,100 +450,38 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             // are suppressed.
             if (groupCountValue != null) {
                 Object value = groupCountValue.getValue();
-                if (value instanceof Integer) return (Integer) value;
+                return (Integer) value;
             }
         } else if (anno.getAnnotationType()
                 .asElement()
                 .getSimpleName()
-                .contentEquals("EnhancedRegex")) {
+                .contentEquals("RegexNNGroups")) {
             AnnotationValue groupCountValue =
                     AnnotationUtils.getElementValuesWithDefaults(anno)
-                            .get(enhancedRegexGroupCountElement);
+                            .get(regexNNGroupsGroupCountElement);
             if (groupCountValue != null) {
                 Object value = groupCountValue.getValue();
-                if (value instanceof Integer) return (Integer) value;
+                return (Integer) value;
             }
         }
         return 0;
     }
 
     /**
-     * Returns the list of non-null groups from the EnhancedRegex annotation. Returns the default if
+     * Returns the list of non-null groups from the RegexNNGroups annotation. Returns the default if
      * the annotation is not present.
      *
      * @param anno the annotation from which the list is to be extracted
      * @return the extracted list of non-null groups
      */
     public List<Integer> getNonNullGroups(AnnotationMirror anno) {
-        return AnnotationUtils.getElementValueArray(anno, "nonNullGroups", Integer.class, true);
+        return AnnotationUtils.getElementValueArray(
+                anno, regexNonNullGroupsElement, Integer.class, true);
     }
 
     /** Returns the number of groups in the given regex String. */
     public static int getGroupCount(@Regex String regexp) {
         return Pattern.compile(regexp).matcher("").groupCount();
-    }
-
-    /**
-     * Returns a list of groups other than 0, that are guaranteed to be non-null given that the
-     * regular expression matches the String.
-     *
-     * @param regexp the string to analyse
-     * @return a list of non-null groups and the number of groups
-     */
-    public static List<Integer> getNonNullGroups(@Regex String regexp) {
-        // TODO check and ask for missing cases or alternate ways.
-        List<Integer> nonNullGroups = new ArrayList<>();
-        int n = getGroupCount(regexp);
-        for (int i = 1; i <= n; i++) {
-            nonNullGroups.add(i);
-        }
-        ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
-        int group = 0;
-        boolean squareBracketOpen = false;
-        boolean escaped = false;
-        boolean notCapturing = false;
-        boolean quoted = false;
-        for (int i = 0; i < regexp.length(); i++) {
-            if (!quoted && !escaped && !squareBracketOpen && regexp.charAt(i) == '(') {
-                if (i < regexp.length() - 2
-                        && regexp.charAt(i + 1) == '?'
-                        && regexp.charAt(i + 2) != '<') {
-                    notCapturing = true;
-                    continue;
-                }
-                group += 1;
-                if (group > n) throw new BugInCF("Encountered more groups than there actually are");
-                if (i != 0 && regexp.charAt(i - 1) == '|') {
-                    nonNullGroups.remove((Integer) group);
-                }
-                openingIndices.push(group);
-            } else if (!escaped && !squareBracketOpen && regexp.charAt(i) == ')') {
-                if (notCapturing) {
-                    notCapturing = false;
-                    continue;
-                }
-                int popped = openingIndices.pop();
-                if (i != regexp.length() - 1
-                        && "*?|".contains(Character.toString(regexp.charAt(i + 1)))) {
-                    nonNullGroups.remove((Integer) popped);
-                }
-            } else if (!escaped && !squareBracketOpen && regexp.charAt(i) == '[') {
-                squareBracketOpen = true;
-            } else if (squareBracketOpen && regexp.charAt(i) == ']') {
-                squareBracketOpen = false;
-            }
-            if (escaped) {
-                if (regexp.charAt(i) == 'Q') quoted = true;
-                else if (quoted && regexp.charAt(i) == 'E') quoted = false;
-            }
-            if (!escaped && regexp.charAt(i) == '\\') {
-                escaped = true;
-            } else if (escaped) {
-                escaped = false;
-            }
-        }
-        Collections.sort(nonNullGroups);
-        return nonNullGroups;
     }
 
     @Override
@@ -595,7 +539,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                         List<Integer> nonNullGroups = RegexUtil.getNonNullGroups(regex, groupCount);
                         // type.addAnnotation(createRegexAnnotation(groupCount));
                         type.addAnnotation(
-                                createEnhancedRegexAnnotation(groupCount, nonNullGroups));
+                                createRegexNNGroupsAnnotation(groupCount, nonNullGroups));
                     } else {
                         type.addAnnotation(createPartialRegexAnnotation(regex));
                     }
@@ -628,7 +572,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 boolean rExprPoly = rExpr.hasAnnotation(PolyRegex.class);
 
                 if (lExprERE && rExprERE && lExprRE && rExprRE) {
-                    type.removeAnnotationInHierarchy(ENHANCEDREGEX);
+                    type.removeAnnotationInHierarchy(REGEXNNGROUPS);
                     List<Integer> concatNonNullGroups = new ArrayList<>();
                     int groupCount = lGroupCount + rGroupCount;
                     concatNonNullGroups.addAll(lNonNullGroups);
@@ -637,7 +581,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     }
                     concatNonNullGroups.add(groupCount);
                     type.addAnnotation(
-                            createEnhancedRegexAnnotation(
+                            createRegexNNGroupsAnnotation(
                                     lGroupCount + rGroupCount, concatNonNullGroups));
                 } else if (lExprRE && rExprRE) {
                     // Remove current @Regex annotation...
@@ -655,9 +599,9 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     String rRegex = getPartialRegexValue(rExpr);
                     String concat = lRegex + rRegex;
                     if (RegexUtil.isRegex(concat)) {
-                        List<Integer> nonNullGroups = getNonNullGroups(concat);
                         int groups = getGroupCount(concat);
-                        type.addAnnotation(createEnhancedRegexAnnotation(groups, nonNullGroups));
+                        List<Integer> nonNullGroups = RegexUtil.getNonNullGroups(concat, groups);
+                        type.addAnnotation(createRegexNNGroupsAnnotation(groups, nonNullGroups));
                     } else {
                         type.addAnnotation(createPartialRegexAnnotation(concat));
                     }
@@ -687,21 +631,21 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 final List<Integer> rhsNonNullGroups = getMinimumNonNullGroups(rhs);
 
                 if (lhsNonNullGroups != null && rhsNonNullGroups != null) {
-                    type.removeAnnotationInHierarchy(ENHANCEDREGEX);
+                    type.removeAnnotationInHierarchy(REGEXNNGROUPS);
                     List<Integer> lNonNullGroups =
-                            getNonNullGroups(lhs.getAnnotation(EnhancedRegex.class));
+                            getNonNullGroups(lhs.getAnnotation(RegexNNGroups.class));
                     List<Integer> rNonNullGroups =
-                            getNonNullGroups(rhs.getAnnotation(EnhancedRegex.class));
+                            getNonNullGroups(rhs.getAnnotation(RegexNNGroups.class));
                     List<Integer> concatNonNullGroups = new ArrayList<>(lNonNullGroups);
-                    int lGroupCount = getGroupCount(lhs.getAnnotation(EnhancedRegex.class));
-                    int rGroupCount = getGroupCount(rhs.getAnnotation(EnhancedRegex.class));
+                    int lGroupCount = getGroupCount(lhs.getAnnotation(RegexNNGroups.class));
+                    int rGroupCount = getGroupCount(rhs.getAnnotation(RegexNNGroups.class));
                     int groupCount = lGroupCount + rGroupCount;
                     for (int r : rNonNullGroups) {
                         concatNonNullGroups.add(r + lGroupCount);
                     }
                     concatNonNullGroups.add(groupCount);
                     type.addAnnotation(
-                            createEnhancedRegexAnnotation(groupCount, concatNonNullGroups));
+                            createRegexNNGroupsAnnotation(groupCount, concatNonNullGroups));
                 } else if (lhsRegexCount != null && rhsRegexCount != null) {
                     int lCount = getGroupCount(lhs.getAnnotation(Regex.class));
                     int rCount = getGroupCount(rhs.getAnnotation(Regex.class));
@@ -734,7 +678,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     // ...and add a new one with the correct group count value.
                     if (nonNullGroups != null)
                         type.replaceAnnotation(
-                                createEnhancedRegexAnnotation(regexCount, nonNullGroups));
+                                createRegexNNGroupsAnnotation(regexCount, nonNullGroups));
                     else type.replaceAnnotation(createRegexAnnotation(regexCount));
                 } else if (bottomAnno != null) {
                     type.replaceAnnotation(
@@ -773,7 +717,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         private Integer getMinimumRegexCount(final AnnotatedTypeMirror type) {
             AnnotationMirror primaryRegexAnno = type.getAnnotation(Regex.class);
             if (primaryRegexAnno == null) {
-                primaryRegexAnno = type.getAnnotation(EnhancedRegex.class);
+                primaryRegexAnno = type.getAnnotation(RegexNNGroups.class);
                 if (primaryRegexAnno == null) {
                     switch (type.getKind()) {
                         case TYPEVAR:
@@ -815,7 +759,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
          * @return the list of non-null groups
          */
         private List<Integer> getMinimumNonNullGroups(final AnnotatedTypeMirror type) {
-            AnnotationMirror anno = type.getAnnotation(EnhancedRegex.class);
+            AnnotationMirror anno = type.getAnnotation(RegexNNGroups.class);
             if (anno == null) {
                 switch (type.getKind()) {
                     case TYPEVAR:
@@ -841,7 +785,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 return null;
             }
             return AnnotationUtils.getElementValueArray(
-                    anno, "nonNullGroups", Integer.class, false);
+                    anno, regexNonNullGroupsElement, Integer.class, false);
         }
 
         //         This won't work correctly until flow sensitivity is supported by the

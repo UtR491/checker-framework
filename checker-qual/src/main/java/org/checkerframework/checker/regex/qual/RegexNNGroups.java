@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * If a type is annotated as {@code EnhancedRegex(groups = n, nonNullGroups = {a, b, c ... })}, then
- * the runtime value is a regular expression with at least n groups where groups numbered a, b, c...
+ * If a type is annotated as {@code RegexNNGroups(groups = n, nonNullGroups = {a, b, c ... })}, then
+ * the run-time value is a regular expression with at least n groups where groups numbered a, b, c..
  * are guaranteed to match some (possibly empty) part of a matching String provided that the regular
  * expression itself matched the String (i.e. group 0 has matched).
  *
@@ -22,7 +22,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf(Regex.class)
-public @interface EnhancedRegex {
+public @interface RegexNNGroups {
     /**
      * The number of groups in the regular expression. Defaults to 0.
      *
@@ -31,7 +31,7 @@ public @interface EnhancedRegex {
     int groups() default 0;
 
     /**
-     * The list of groups other than 0, that are guaranteed to be non-null provided the input String
+     * An array of groups other than 0, that are guaranteed to be non-null provided the input String
      * matches the regular expression. Defaults to an empty list.
      *
      * @return list of non-null groups.
