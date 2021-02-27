@@ -839,6 +839,43 @@ public class AnnotationUtils {
         return result;
     }
 
+    public static <T> List<T> getElementValueArray(
+            AnnotationMirror anno,
+            ExecutableElement elementName,
+            Class<T> expectedType,
+            boolean useDefaults) {
+        AnnotationValue nonNullGroups = anno.getElementValues().get(elementName);
+        @SuppressWarnings("unchecked")
+        List<AnnotationValue> la =
+                List.class.cast(
+                        nonNullGroups != null
+                                ? nonNullGroups.getValue()
+                                : useDefaults
+                                        ? elementName.getDefaultValue().getValue()
+                                        : Collections.EMPTY_LIST);
+        List<T> result = new ArrayList<>(la.size());
+        for (AnnotationValue a : la) {
+            try {
+                result.add(expectedType.cast(a.getValue()));
+            } catch (Throwable t) {
+                String err1 =
+                        String.format(
+                                "getElementValueArray(%n  anno=%s,%n  elementName=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
+                                anno, elementName, expectedType, useDefaults);
+                String err2 =
+                        String.format(
+                                "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
+                                expectedType,
+                                a,
+                                a.getClass(),
+                                a.getValue(),
+                                a.getValue().getClass());
+                throw new BugInCF(err1 + "; " + err2, t);
+            }
+        }
+        return result;
+    }
+
     /**
      * Get the element with the name {@code elementName} of the annotation {@code anno}. The element
      * has type {@code expectedType} or array of {@code expectedType}.

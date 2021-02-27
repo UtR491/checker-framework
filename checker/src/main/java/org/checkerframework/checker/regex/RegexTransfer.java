@@ -1,7 +1,6 @@
 package org.checkerframework.checker.regex;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -100,11 +99,10 @@ public class RegexTransfer extends CFTransfer {
             } else {
                 groupCount = 0;
             }
-            AnnotationMirror enhancedRegexAnnotation =
-                    factory.createEnhancedRegexAnnotation(
-                            groupCount, new ArrayList<>(Arrays.asList(0, groupCount)));
+            AnnotationMirror regexNNGroupsAnnotation =
+                    factory.createRegexNNGroupsAnnotation(groupCount, new ArrayList<>());
             if (thenStore.getValue(firstParam) != null) thenStore.clearValue(firstParam);
-            thenStore.insertValue(firstParam, enhancedRegexAnnotation);
+            thenStore.insertValue(firstParam, regexNNGroupsAnnotation);
             return newResult;
         } else if (ElementUtils.matchesElement(
                 method, IS_REGEX_METHOD_NAME, String.class, List.class)) {

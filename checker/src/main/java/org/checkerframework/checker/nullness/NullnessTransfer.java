@@ -20,7 +20,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.checkerframework.checker.regex.RegexAnnotatedTypeFactory;
 import org.checkerframework.checker.regex.RegexChecker;
-import org.checkerframework.checker.regex.qual.EnhancedRegex;
+import org.checkerframework.checker.regex.qual.RegexNNGroups;
 import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
@@ -397,7 +397,7 @@ public class NullnessTransfer
         // the invocation is verified to return a NonNull String provided the Pattern matches.
         if (regexTypeFactory != null && regexTypeFactory.isMatcherGroup(n)) {
             AnnotationMirror receiverType =
-                    regexTypeFactory.getAnnotationMirror(receiver.getTree(), EnhancedRegex.class);
+                    regexTypeFactory.getAnnotationMirror(receiver.getTree(), RegexNNGroups.class);
             if (receiverType != null) {
                 int annoGroup = regexTypeFactory.getGroupCount(receiverType);
                 List<Integer> nonNullGroups = regexTypeFactory.getNonNullGroups(receiverType);

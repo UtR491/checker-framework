@@ -9,8 +9,8 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.regex.qual.EnhancedRegex;
 import org.checkerframework.checker.regex.qual.Regex;
+import org.checkerframework.checker.regex.qual.RegexNNGroups;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
@@ -106,10 +106,10 @@ public class RegexVisitor extends BaseTypeVisitor<RegexAnnotatedTypeFactory> {
                     if (receiverType.hasAnnotation(Regex.class)) {
                         annoGroups =
                                 atypeFactory.getGroupCount(receiverType.getAnnotation(Regex.class));
-                    } else if (receiverType.hasAnnotation(EnhancedRegex.class)) {
+                    } else if (receiverType.hasAnnotation(RegexNNGroups.class)) {
                         annoGroups =
                                 atypeFactory.getGroupCount(
-                                        receiverType.getAnnotation(EnhancedRegex.class));
+                                        receiverType.getAnnotation(RegexNNGroups.class));
                     }
                 }
                 if (paramGroups > annoGroups) {
