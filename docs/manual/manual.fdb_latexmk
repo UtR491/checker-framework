@@ -1,7 +1,7 @@
 # Fdb version 3
-["bibtex manual"] 1614443833 "manual.aux" "manual.bbl" "manual" 1614444383
+["bibtex manual"] 1614449168 "manual.aux" "manual.bbl" "manual" 1614449179
   "/usr/share/texlive/texmf-dist/bibtex/bst/base/alpha.bst" 1292289607 23907 a5f93555796fb564b924339521f10a7c ""
-  "manual.aux" 1614443838 180140 e56a3f94a52584cb0bf476e43bac8021 "pdflatex"
+  "manual.aux" 1614449178 180164 4687f0d7dc7cb4ffc54fc11030079d8a "pdflatex"
   "plume-bib/alias.bib" 1614443814 46619 a121ac9cd8ca95421a74b20a65e8c63d ""
   "plume-bib/bibstring-unabbrev.bib" 1614443814 9640 fe8bb8815cec54fcfe74f9a4845be2a1 ""
   "plume-bib/concurrency.bib" 1614443814 9698 79f298b78e1a87d0d0f35846d38ee29d ""
@@ -11,9 +11,9 @@
   "plume-bib/invariants.bib" 1614443814 379068 60bc426af10388eadae68563441ac65b ""
   "plume-bib/types.bib" 1614443814 233675 a484695f7bf01d43693954266c5175c1 ""
   (generated)
-  "manual.bbl"
   "manual.blg"
-["pdflatex"] 1614443833 "manual.tex" "manual.pdf" "manual" 1614444383
+  "manual.bbl"
+["pdflatex"] 1614449169 "manual.tex" "manual.pdf" "manual" 1614449179
   "../logo/Logo/CFLogo.pdf" 1610437633 401198 0249912ac765b6aca6b03bae2ae0124f ""
   "/etc/texmf/web2c/texmf.cnf" 1590584765 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
@@ -139,7 +139,7 @@
   "annotating-libraries.tex" 1614057810 37946 5fff2313bff32ebd0e025fbeaf9b371c ""
   "called-methods-checker.tex" 1610437633 12118 183c4d0dd46ac8f02f94a9712d874216 ""
   "constant-value-checker.tex" 1612364641 17362 aa15fcc8b2f358cde6e929ac3c398752 ""
-  "contributors.tex" 1614444381 1802 e4f2fa3b924e77b39ad065325c81e447 ""
+  "contributors.tex" 1614449159 1802 e4f2fa3b924e77b39ad065325c81e447 ""
   "creating-a-checker.tex" 1614057810 103862 87260aaa094309ccbe464525a82972b6 ""
   "external-checkers.tex" 1610437633 8907 491a747db13ea88a4e7649e7cd414967 ""
   "external-tools.tex" 1614057810 49813 7523e9c0190b27c0b96ac72367a402f7 ""
@@ -183,11 +183,11 @@
   "introduction.tex" 1613714155 68472 b2376f82ef752009d80a71008ee528b2 ""
   "lock-checker.tex" 1610437633 39717 89fc7265c81459c3782a4033776a5825 ""
   "manual-style.tex" 1610437633 8806 402e1d0bcd8651143ba75aaa7014dae9 ""
-  "manual.aux" 1614443838 180140 e56a3f94a52584cb0bf476e43bac8021 "pdflatex"
-  "manual.bbl" 1614443833 10051 9b9199e5fcfa9456a2414e4304668357 "bibtex manual"
-  "manual.out" 1614443838 44969 3b76ceed8f938445e74be85260fd9879 "pdflatex"
+  "manual.aux" 1614449178 180164 4687f0d7dc7cb4ffc54fc11030079d8a "pdflatex"
+  "manual.bbl" 1614449169 10051 9b9199e5fcfa9456a2414e4304668357 "bibtex manual"
+  "manual.out" 1614449178 44969 3b76ceed8f938445e74be85260fd9879 "pdflatex"
   "manual.tex" 1612364641 2972 d8132d9435bfa414d8a983fa18fa48ba ""
-  "manual.toc" 1614443838 59651 9e08de90106bcdc23848f6b3594eac40 "pdflatex"
+  "manual.toc" 1614449178 59651 9e08de90106bcdc23848f6b3594eac40 "pdflatex"
   "map-key-checker.tex" 1610437633 10807 12badb69e8cebeef16d6087428045611 ""
   "nullness-checker.tex" 1614057810 86177 80df80e182023a17c0af05e87407a02f ""
   "optional-checker.tex" 1610437633 4819 782442644e7f3faca16319c991ef1cba ""
@@ -195,7 +195,7 @@
   "purity-checker.tex" 1610437633 4595 3a9d7911005d0ec10f1ee6c5557b2d57 ""
   "reflection-checker.tex" 1610437633 12518 7245c1bab4fb26ff0eefd29fe02b9df3 ""
   "reflection-inference-rules.tex" 1610437633 2189 1eb7ce18f32ddd4eba47740f28ea1275 ""
-  "regex-checker.tex" 1614407389 11552 19be01a30f2511ae14b9d8f46aca3956 ""
+  "regex-checker.tex" 1614449141 11709 70714e0806ac329d6185b5eb3391dcb9 ""
   "returns-receiver-checker.tex" 1610437633 4525 284d6142bc4f37751758c3e927b4b520 ""
   "signature-checker.tex" 1610437633 9950 e8e28ef4c010edd774d95dc0b6e0a3f4 ""
   "signedness-checker.tex" 1612364641 13631 f03cbbcd777dc7ce5cf786369f1775e6 ""
@@ -206,8 +206,8 @@
   "units-checker.tex" 1612364641 12920 c77e77df0b6bd907981068a9a02e767e ""
   "warnings.tex" 1613714484 38674 6ce74a5a3902e748183b4810d4e37cc2 ""
   (generated)
-  "manual.toc"
-  "manual.log"
   "manual.aux"
   "manual.out"
+  "manual.log"
+  "manual.toc"
   "manual.pdf"

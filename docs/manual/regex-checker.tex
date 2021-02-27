@@ -146,9 +146,9 @@ Figure~\ref{fig-regex-partial}.
 \subsectionAndLabel{Testing whether a string is a regular expression}{regexutil-methods}
 
 Sometimes, the Regex Checker cannot infer whether a particular expression
-is a regular expression --- and sometimes your code cannot either!  In
+is a regular expression --- and sometimes your code cannot either! In
 these cases, you can use the \<isRegex> method to perform such a test, and
-other helper methods to provide useful error messages.  A
+other helper methods to provide useful error messages. A
 common use is for user-provided regular expressions (such as ones passed
 on the command-line).
 Figure~\ref{fig-regex-util-example} gives an
@@ -172,12 +172,12 @@ example of the intended use of the \code{RegexUtil} methods.
 
 \end{description}
 
-An additional version of each of these methods is also provided that takes
-an additional group count parameter. The
-\refmethod{checker/regex/util}{RegexUtil}{isRegex}{-java.lang.String-int-} method
-verifies that the argument has at least the given number of groups and the
+Two additional versions of \code{isRegex} method are also provided that take some additional
+parameters. The \refmethod{checker/regex/util}{RegexUtil}{isRegex}{-java.lang.String-int-}
+method takes a String and int as arguments and
+verifies that the String argument has at least the given number of groups. The
 \refmethod{checker/regex/util}{RegexUtil}{isRegex}{-java.lang.String-int-java.util.List-}
-verifies that the argument has at least the give number of groups and that when it
+verifies that the String argument has at least the give number of groups and that when it
 matches a \code{String} the groups in the \code{List} are guaranteed to match some
 part of the \code{String}. The
 \refmethod{checker/regex/util}{RegexUtil}{regexError}{-java.lang.String-int-} and

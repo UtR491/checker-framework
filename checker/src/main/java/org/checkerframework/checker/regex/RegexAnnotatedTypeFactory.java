@@ -105,7 +105,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             TreeUtils.getMethod(
                     "org.checkerframework.checker.regex.qual.Regex", "value", 0, processingEnv);
 
-    /** The method that returns the value element of a {@code @RegexNNGroups} annotation. */
+    /** The method that returns the groups element of a {@code @RegexNNGroups} annotation. */
     protected final ExecutableElement regexNNGroupsGroupCountElement =
             TreeUtils.getMethod(
                     "org.checkerframework.checker.regex.qual.RegexNNGroups",
@@ -113,6 +113,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     0,
                     processingEnv);
 
+    /** The method that returns the nonNullGroups element of a {@code @RegexNNGroups} annotation */
     protected final ExecutableElement regexNonNullGroupsElement =
             TreeUtils.getMethod(
                     "org.checkerframework.checker.regex.qual.RegexNNGroups",
