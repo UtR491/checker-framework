@@ -49,10 +49,11 @@ These qualifiers make up the Regex type system:
   is the same as the optional parameter for \code{Regex}, \<nonNullGroups>
   is an array that specifies the capturing groups that are definitely
   non-null (possibly empty) provided the regular expression matches the
-  target string. For example if an expression's type is
+  target string,. For example if an expression's type is
   \<RegexNNGroups(groups = 2, nonNullGroups = {1})>, then it's run-time
   value could be \<"colo(u?)r(s)?"> but not \<"colo(u)?r(s?)"> nor a
-  non-regex string such as \<"1) first point">.
+  non-regex string such as \<"1) first point">. Note that \code{Regex(1)}
+  is exactly the same as \code{EnhancedRegex(groups = 1)}.
 
 \item[\refqualclass{checker/regex/qual}{PolyRegex}]
   indicates qualifier polymorphism.
@@ -66,8 +67,8 @@ Figures~\ref{fig-regex-hierarchy-1} and \ref{fig-regex-hierarchy-2}.
 
 \begin{figure}
 \includeimage{regex}{9cm}
-\caption{The subtyping relationship of the Regex annotation.
-  The type qualifiers are applicable to \<CharSequence> and its subtypes.
+\caption{The subtyping relationship of the \code{Regex} annotation.
+  The type qualifier is applicable to \<CharSequence> and its subtypes.
   Because the parameter to a \<@Regex> qualifier is at least the number of
   capturing groups in a regular expression, a \<@Regex> qualifier with more
   capturing groups is a subtype of a \<@Regex> qualifier with fewer capturing
@@ -99,11 +100,11 @@ in your code (see Section~\ref{effective-qualifier}).
 If a \code{String} literal is a valid regex,
 the checker implicitly adds the \code{@RegexNNGroups} qualifier with
 the argument set to the correct number of capturing groups and the list
-of groups that are guarenteed to match some (possibly empty) part of a
+of groups that are guaranteed to match some (possibly empty) part of a
 matching \code{String}.
 The Regex Checker allows
 the \code{null} literal to be assigned to any type qualified with the
-\code{Regex} qualifier.
+\code{Regex} or \code{RegexNNGroups} qualifier.
 
 
 \subsectionAndLabel{Capturing groups}{regex-capturing-groups}

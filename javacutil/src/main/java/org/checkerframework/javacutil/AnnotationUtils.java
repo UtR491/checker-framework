@@ -809,6 +809,7 @@ public class AnnotationUtils {
      * @return the value of the element with the given name; it is a new list, so it is safe for
      *     clients to side-effect
      */
+    @Deprecated
     public static <T> List<T> getElementValueArray(
             AnnotationMirror anno,
             CharSequence elementName,
@@ -839,19 +840,35 @@ public class AnnotationUtils {
         return result;
     }
 
+    /**
+     * Get the element {@code executableElement} of the annotation {@code anno}, where the element
+     * has an array type. One element of the result is expected to have type {@code expectedType}.
+     *
+     * <p>Parameter useDefaults is used to determine whether default values should be used for
+     * annotation values. Finding defaults requires more computation, so should be false when no
+     * defaulting is needed.
+     *
+     * @param anno the annotation to disassemble
+     * @param executableElement the element to access
+     * @param expectedType the expected type used to cast the return type
+     * @param <T> the class of the expected type
+     * @param useDefaults whether to apply default values to the element
+     * @return the value of the element with the given name; it is a new list, so it is safe for
+     *     clients to side-effect
+     */
     public static <T> List<T> getElementValueArray(
             AnnotationMirror anno,
-            ExecutableElement elementName,
+            ExecutableElement executableElement,
             Class<T> expectedType,
             boolean useDefaults) {
-        AnnotationValue nonNullGroups = anno.getElementValues().get(elementName);
+        AnnotationValue nonNullGroups = anno.getElementValues().get(executableElement);
         @SuppressWarnings("unchecked")
         List<AnnotationValue> la =
                 List.class.cast(
                         nonNullGroups != null
                                 ? nonNullGroups.getValue()
                                 : useDefaults
-                                        ? elementName.getDefaultValue().getValue()
+                                        ? executableElement.getDefaultValue().getValue()
                                         : Collections.EMPTY_LIST);
         List<T> result = new ArrayList<>(la.size());
         for (AnnotationValue a : la) {
@@ -860,8 +877,8 @@ public class AnnotationUtils {
             } catch (Throwable t) {
                 String err1 =
                         String.format(
-                                "getElementValueArray(%n  anno=%s,%n  elementName=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
-                                anno, elementName, expectedType, useDefaults);
+                                "getElementValueArray(%n  anno=%s,%n  executableElement=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
+                                anno, executableElement, expectedType, useDefaults);
                 String err2 =
                         String.format(
                                 "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
