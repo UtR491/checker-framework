@@ -809,7 +809,6 @@ public class AnnotationUtils {
      * @return the value of the element with the given name; it is a new list, so it is safe for
      *     clients to side-effect
      */
-    @Deprecated
     public static <T> List<T> getElementValueArray(
             AnnotationMirror anno,
             CharSequence elementName,
