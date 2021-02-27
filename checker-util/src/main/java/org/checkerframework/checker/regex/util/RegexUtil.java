@@ -357,8 +357,8 @@ public final class RegexUtil {
     }
 
     /**
-     * Returns a list groups other than 0, that are guaranteed to be non-null given that the regular
-     * expression matches the String.
+     * Returns a list of groups other than 0, that are guaranteed to be non-null given that the
+     * regular expression matches the String.
      *
      * @param regexp pattern to be analysed
      * @param n number of capturing groups in the pattern

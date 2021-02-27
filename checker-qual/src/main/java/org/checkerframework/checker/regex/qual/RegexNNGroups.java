@@ -13,7 +13,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
  * are guaranteed to match some (possibly empty) part of a matching String provided that the regular
  * expression itself matched the String (i.e. group 0 has matched).
  *
- * <p>For example the regular expression {@code "(abc)?(cde)"} has type {@code RegexNNGroups(groups
+ * <p>For example, the regular expression {@code "(abc)?(cde)"} has type {@code EnhancedRegex(groups
  * = 2, nonNullGroups = {2})}
  *
  * @checker_framework.manual #regex-checker Regex Checker
