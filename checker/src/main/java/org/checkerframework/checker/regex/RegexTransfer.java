@@ -1,6 +1,7 @@
 package org.checkerframework.checker.regex;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -8,6 +9,7 @@ import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.RegularTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
+import org.checkerframework.dataflow.cfg.node.ArrayCreationNode;
 import org.checkerframework.dataflow.cfg.node.ClassNameNode;
 import org.checkerframework.dataflow.cfg.node.GreaterThanNode;
 import org.checkerframework.dataflow.cfg.node.GreaterThanOrEqualNode;
@@ -105,18 +107,37 @@ public class RegexTransfer extends CFTransfer {
             thenStore.insertValue(firstParam, regexNNGroupsAnnotation);
             return newResult;
         } else if (ElementUtils.matchesElement(
-                method, IS_REGEX_METHOD_NAME, String.class, List.class)) {
-            //            CFStore thenStore = result.getRegularStore();
-            //            CFStore elseStore = thenStore.copy();
-            //            ConditionalTransferResult<CFValue, CFStore> newResult =
-            //                    new ConditionalTransferResult<>(result.getResultValue(),
-            // thenStore, elseStore);
-            //            JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
-            //
-            //            // add annotation with correct group count (if possible,
-            //            // regex annotation without count otherwise)
-            //            Node node = n.getArgument(1);
-            /** TODO Not sure what type of node for Lists. Ask. */
+                method, IS_REGEX_METHOD_NAME, String.class, int.class, int[].class)) {
+            CFStore thenStore = result.getRegularStore();
+            CFStore elseStore = thenStore.copy();
+            ConditionalTransferResult<CFValue, CFStore> newResult =
+                    new ConditionalTransferResult<>(result.getResultValue(), thenStore, elseStore);
+            JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
+
+            Node count = n.getArgument(1);
+            Node nonNullGroups = n.getArgument(2);
+            List<Integer> regexNNGroupsNonNullGroups = new ArrayList<>();
+            int regexNNGroupsGroups = 0;
+
+            if (count instanceof IntegerLiteralNode) {
+                regexNNGroupsGroups = ((IntegerLiteralNode) count).getValue();
+            }
+
+            if (nonNullGroups instanceof ArrayCreationNode) {
+                ArrayCreationNode nonNullGroupsArray = (ArrayCreationNode) nonNullGroups;
+                List<Node> nonNullList = nonNullGroupsArray.getInitializers();
+                for (Node e : nonNullList) {
+                    if (e instanceof IntegerLiteralNode) {
+                        regexNNGroupsNonNullGroups.add(((IntegerLiteralNode) e).getValue());
+                    }
+                }
+            }
+            AnnotationMirror regexNNGroupsAnnotation =
+                    factory.createRegexNNGroupsAnnotation(
+                            regexNNGroupsGroups, regexNNGroupsNonNullGroups);
+            if (thenStore.getValue(firstParam) != null) thenStore.clearValue(firstParam);
+            thenStore.insertValue(firstParam, regexNNGroupsAnnotation);
+            return newResult;
         } else if (ElementUtils.matchesElement(
                 method, AS_REGEX_METHOD_NAME, String.class, int.class)) {
             // RegexUtil.asRegex(s, groups) method
@@ -125,7 +146,7 @@ public class RegexTransfer extends CFTransfer {
 
             // add annotation with correct group count (if possible,
             // regex annotation without count otherwise)
-            AnnotationMirror regexAnnotation;
+            AnnotationMirror regexNNGroupsAnnotation;
             Node count = n.getArgument(1);
             int groupCount;
             if (count instanceof IntegerLiteralNode) {
@@ -134,11 +155,43 @@ public class RegexTransfer extends CFTransfer {
             } else {
                 groupCount = 0;
             }
-            regexAnnotation = factory.createRegexAnnotation(groupCount);
+            regexNNGroupsAnnotation =
+                    factory.createRegexNNGroupsAnnotation(groupCount, Collections.emptyList());
 
             CFValue newResultValue =
                     analysis.createSingleAnnotationValue(
-                            regexAnnotation, result.getResultValue().getUnderlyingType());
+                            regexNNGroupsAnnotation, result.getResultValue().getUnderlyingType());
+            return new RegularTransferResult<>(newResultValue, result.getRegularStore());
+        } else if (ElementUtils.matchesElement(
+                method, AS_REGEX_METHOD_NAME, String.class, int.class, int[].class)) {
+            AnnotationMirror regexNNGroupsAnnotation;
+            Node count = n.getArgument(1);
+            int groupCount = 0;
+            if (count instanceof IntegerLiteralNode) {
+                IntegerLiteralNode iln = (IntegerLiteralNode) count;
+                groupCount = iln.getValue();
+            }
+
+            Node nonNulls = n.getArgument(2);
+            List<Integer> nonNullGroups;
+            if (nonNulls instanceof ArrayCreationNode) {
+                ArrayCreationNode acn = (ArrayCreationNode) nonNulls;
+                List<Node> nonNullNodes = acn.getInitializers();
+                nonNullGroups = new ArrayList<>();
+                for (Node e : nonNullNodes) {
+                    if (e instanceof IntegerLiteralNode) {
+                        nonNullGroups.add(((IntegerLiteralNode) e).getValue());
+                    }
+                }
+            } else {
+                nonNullGroups = Collections.emptyList();
+            }
+            regexNNGroupsAnnotation =
+                    factory.createRegexNNGroupsAnnotation(groupCount, nonNullGroups);
+
+            CFValue newResultValue =
+                    analysis.createSingleAnnotationValue(
+                            regexNNGroupsAnnotation, result.getResultValue().getUnderlyingType());
             return new RegularTransferResult<>(newResultValue, result.getRegularStore());
         }
         return result;
