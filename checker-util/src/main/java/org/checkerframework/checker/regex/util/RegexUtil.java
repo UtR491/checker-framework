@@ -180,7 +180,8 @@ public final class RegexUtil {
      * @param s string to check for being a regular expression
      * @param groups number of groups expected.
      * @param nonNullGroups list of expected non-null groups.
-     * @return true iff s is a regular expression with {@code groups} groups
+     * @return true iff s is a regular expression with {@code groups} groups and groups in {@code
+     *     nonNullGroups} are definitely non-null when a string matches the regex.
      */
     @Pure
     @EnsuresQualifierIf(result = true, expression = "#1", qualifier = RegexNNGroups.class)
