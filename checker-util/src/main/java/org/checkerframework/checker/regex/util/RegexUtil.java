@@ -178,20 +178,26 @@ public final class RegexUtil {
      * groups as definitely non-null.
      *
      * @param s string to check for being a regular expression
-     * @param groups list of expected non-null groups, and the number of groups as the last element
+     * @param groups number of groups expected.
+     * @param nonNullGroups list of expected non-null groups.
      * @return true iff s is a regular expression with {@code groups} groups
      */
     @Pure
     @EnsuresQualifierIf(result = true, expression = "#1", qualifier = RegexNNGroups.class)
-    public static boolean isRegex(String s, List<Integer> groups) {
+    public static boolean isRegex(String s, int groups, int... nonNullGroups) {
         Pattern p;
         try {
             p = Pattern.compile(s);
         } catch (PatternSyntaxException e) {
             return false;
         }
-        List<Integer> nonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
-        return nonNullGroups.containsAll(groups);
+        List<Integer> computedNonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
+        if (groups <= getGroupCount(p)) {
+            ArrayList<Integer> paramNonNullGroups = new ArrayList<>(nonNullGroups.length);
+            for (int e : nonNullGroups) paramNonNullGroups.add(e);
+            return computedNonNullGroups.containsAll(paramNonNullGroups);
+        }
+        return false;
     }
 
     /**
@@ -298,9 +304,9 @@ public final class RegexUtil {
     }
 
     /**
-     * Returns the argument as a {@code @Regex(groups) String} if it is a regex with at least the
-     * given number of groups, otherwise throws an error. The purpose of this method is to suppress
-     * Regex Checker warnings. It should be very rarely needed.
+     * Returns the argument as a {@code @RegexNNGroups(groups = groups) String} if it is a regex
+     * with at least the given number of groups, otherwise throws an error. The purpose of this
+     * method is to suppress Regex Checker warnings. It should be very rarely needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
@@ -311,11 +317,43 @@ public final class RegexUtil {
     @SideEffectFree
     // The return type annotation is irrelevant; it is special-cased by
     // RegexAnnotatedTypeFactory.
-    public static @Regex String asRegex(String s, int groups) {
+    public static @RegexNNGroups String asRegex(String s, int groups) {
         try {
             Pattern p = Pattern.compile(s);
             int actualGroups = getGroupCount(p);
             if (actualGroups < groups) {
+                throw new Error(regexErrorMessage(s, groups, actualGroups));
+            }
+            return s;
+        } catch (PatternSyntaxException e) {
+            throw new Error(e);
+        }
+    }
+
+    /**
+     * Returns the argument as a {@code @RegexNNGroups(groups = groups, nonNullGroups =
+     * nonNullGroups} if it is a regex with at least the given number of groups and the
+     * nonNullGroups are guaranteed to match provided that the regex matches a string, otherwise
+     * throws an error. The purpose of this method is to suppress Regex Checker warnings. It should
+     * be rarely needed.
+     *
+     * @param s string to check for being a regular expression
+     * @param groups number of groups expected
+     * @param nonNullGroups groups expected to be match some part of a target string when the regex
+     *     matches
+     * @return its argument
+     * @throws Error if argument is not a regex
+     */
+    @SuppressWarnings("regex")
+    @SideEffectFree
+    public static @RegexNNGroups String asRegex(String s, int groups, int... nonNullGroups) {
+        try {
+            Pattern p = Pattern.compile(s);
+            int actualGroups = getGroupCount(p);
+            List<Integer> actualNonNullGroups = getNonNullGroups(p.pattern(), actualGroups);
+            List<Integer> paramNonNullGroups = new ArrayList<>(nonNullGroups.length);
+            for (int e : nonNullGroups) paramNonNullGroups.add(e);
+            if (actualGroups < groups || !actualNonNullGroups.containsAll(paramNonNullGroups)) {
                 throw new Error(regexErrorMessage(s, groups, actualGroups));
             }
             return s;

@@ -1,10 +1,8 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.regex.qual.RegexNNGroups;
+import org.checkerframework.checker.regex.util.RegexUtil;
 
 public class RegexNNGroupsTest {
     void hierarchyTest() {
@@ -82,12 +80,15 @@ public class RegexNNGroupsTest {
     String s = "(abc)(def)?(?<alpha>alpha)?.";
     Pattern p = Pattern.compile(s);
 
-    // This will throw an error for now.
     @NonNull String regexUtilRefinementTest() {
-        Matcher m = p.matcher("abc");
-        if (m.matches()) {
-            List<Integer> nonNull = new ArrayList<>(Arrays.asList(1, 2, 3));
-            //            if (RegexUtil.isRegex(s, nonNull)) return m.group(3);
+        String s = "abc";
+        if (RegexUtil.isRegex(s, 3, 1, 2, 3)) {
+            Pattern p = Pattern.compile(s);
+            Matcher m = p.matcher("abc");
+            if (m.matches()) {
+                // legal
+                return m.group(3);
+            }
         }
         return "";
     }
