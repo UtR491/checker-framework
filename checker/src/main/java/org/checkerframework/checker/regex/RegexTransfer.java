@@ -80,24 +80,23 @@ public class RegexTransfer extends CFTransfer {
             ExecutableElement method,
             TransferResult<CFValue, CFStore> result) {
         RegexAnnotatedTypeFactory factory = (RegexAnnotatedTypeFactory) analysis.getTypeFactory();
-        if (ElementUtils.matchesElement(method, IS_REGEX_METHOD_NAME, String.class, int.class)) {
-            // RegexUtil.isRegex(s, groups) method
-            // (No special case is needed for isRegex(String) because of
-            // the annotation on that method's definition.)
 
+        // Special cases for some RegexUtil.isRegex and RegexUtil.asRegex methods.  Each one adds an
+        // annotation with elements/arguments if possible, or falls back to just `@Ragex`.
+        // (No special case is needed for isRegex(String) or asRegex(String); their annotations are
+        // sufficient.)
+
+        if (ElementUtils.matchesElement(method, IS_REGEX_METHOD_NAME, String.class, int.class)) {
             CFStore thenStore = result.getRegularStore();
             CFStore elseStore = thenStore.copy();
             ConditionalTransferResult<CFValue, CFStore> newResult =
                     new ConditionalTransferResult<>(result.getResultValue(), thenStore, elseStore);
             JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
 
-            // add annotation with correct group count (if possible,
-            // regex annotation without count otherwise)
             Node count = n.getArgument(1);
             int groupCount;
             if (count instanceof IntegerLiteralNode) {
-                IntegerLiteralNode iln = (IntegerLiteralNode) count;
-                groupCount = iln.getValue();
+                groupCount = ((IntegerLiteralNode) count).getValue();
             } else {
                 groupCount = 0;
             }
@@ -115,14 +114,14 @@ public class RegexTransfer extends CFTransfer {
             JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
 
             Node count = n.getArgument(1);
-            Node nonNullGroups = n.getArgument(2);
-            List<Integer> regexNNGroupsNonNullGroups = new ArrayList<>();
-            int regexNNGroupsGroups = 0;
-
+            int regexNNGroupsGroups;
             if (count instanceof IntegerLiteralNode) {
                 regexNNGroupsGroups = ((IntegerLiteralNode) count).getValue();
+            } else {
+                regexNNGroupsGroups = 0;
             }
-
+            Node nonNullGroups = n.getArgument(2);
+            List<Integer> regexNNGroupsNonNullGroups = new ArrayList<>();
             if (nonNullGroups instanceof ArrayCreationNode) {
                 ArrayCreationNode nonNullGroupsArray = (ArrayCreationNode) nonNullGroups;
                 List<Node> nonNullList = nonNullGroupsArray.getInitializers();
@@ -140,12 +139,6 @@ public class RegexTransfer extends CFTransfer {
             return newResult;
         } else if (ElementUtils.matchesElement(
                 method, AS_REGEX_METHOD_NAME, String.class, int.class)) {
-            // RegexUtil.asRegex(s, groups) method
-            // (No special case is needed for asRegex(String) because of
-            // the annotation on that method's definition.)
-
-            // add annotation with correct group count (if possible,
-            // regex annotation without count otherwise)
             AnnotationMirror regexNNGroupsAnnotation;
             Node count = n.getArgument(1);
             int groupCount;
