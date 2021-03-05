@@ -790,22 +790,8 @@ public class ElementUtils {
                         .get(i)
                         .asType()
                         .toString()
-                        .equals(parameters[i].getName())) {
-                    // might be a primitive array.
-                    String type = method.getParameters().get(i).asType().toString();
-                    if (type.contains("[]")) {
-                        int dimension = (type.lastIndexOf("]") - type.indexOf("[") + 1) / 2;
-                        char encoding =
-                                type.contains("boolean") ? 'Z' : type.toUpperCase().charAt(0);
-                        String encodedType = "";
-                        while (dimension-- > 0) {
-                            encodedType = encodedType.concat("[");
-                        }
-                        encodedType = encodedType.concat(String.valueOf(encoding));
-                        if (!encodedType.equals(parameters[i].getName())) return false;
-                    } else {
-                        return false;
-                    }
+                        .equals(parameters[i].getCanonicalName())) {
+                    return false;
                 }
             }
         }
