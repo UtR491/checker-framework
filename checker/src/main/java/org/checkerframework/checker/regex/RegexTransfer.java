@@ -198,9 +198,9 @@ public class RegexTransfer extends CFTransfer {
     /**
      * The new store with types modified on the basis of {@code isRegex} test.
      *
-     * @param n the {@code RegexUtil.isRegex} method invocation.
-     * @param result the store just before the invocation is encountered.
-     * @param factory the type factory to create relevant types.
+     * @param n the {@code RegexUtil.isRegex} method invocation
+     * @param result the store just before the invocation is encountered
+     * @param factory the type factory to create relevant types
      * @return the new store after refining the type of the string that was checked.
      */
     private ConditionalTransferResult<CFValue, CFStore> getModifiedStore(
@@ -222,9 +222,9 @@ public class RegexTransfer extends CFTransfer {
     /**
      * The new store with modified on the basis of {@code asRegex} refinement.
      *
-     * @param n the {@code RegexUtil.isRegex} method invocation.
-     * @param result the store just before the invocation is encountered.
-     * @param factory the type factory to create relevant types.
+     * @param n the {@code RegexUtil.isRegex} method invocation
+     * @param result the store just before the invocation is encountered
+     * @param factory the type factory to create relevant types
      * @return the new store after refining the type of the string that was refined.
      */
     private TransferResult<CFValue, CFStore> getAsRegexModifiedStore(
@@ -241,8 +241,8 @@ public class RegexTransfer extends CFTransfer {
     /**
      * Returns the {@code @RegexNNGroups} annotation with relevant field values.
      *
-     * @param factory the type factory to create types.
-     * @param nodes arguments passed to the {@code RegexUtil} functions.
+     * @param factory the type factory to create types
+     * @param nodes arguments passed to the {@code RegexUtil} functions
      * @return the {@code @RegexNNGroups} annotation.
      */
     private AnnotationMirror getRegexNNGroupsAnno(

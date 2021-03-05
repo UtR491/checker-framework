@@ -406,7 +406,7 @@ public final class RegexUtil {
      * @param regexp pattern to be analysed
      * @param n number of capturing groups in the pattern
      * @return the groups that are non-null in the argument
-     * @throws Error if the argument is not a regex.
+     * @throws Error if the argument is not a regex
      */
     public static List<Integer> getNonNullGroups(String regexp, int n) {
         try {
