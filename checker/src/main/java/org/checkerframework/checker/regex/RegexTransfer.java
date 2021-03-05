@@ -79,11 +79,17 @@ public class RegexTransfer extends CFTransfer {
             ExecutableElement method,
             TransferResult<CFValue, CFStore> result) {
         RegexAnnotatedTypeFactory factory = (RegexAnnotatedTypeFactory) analysis.getTypeFactory();
+
+        // Special cases for some RegexUtil.isRegex and RegexUtil.asRegex methods.  Each one adds an
+        // annotation with elements/arguments if possible, or falls back to just `@Regex`.
+        // (No special case is needed for isRegex(String) or asRegex(String); their annotations are
+        // sufficient.)
+
         if (ElementUtils.matchesElement(method, IS_REGEX_METHOD_NAME, String.class, int.class)) {
-            return getModifiedStore(n, result, factory);
+            return getIsRegexModifiedStore(n, result, factory);
         } else if (ElementUtils.matchesElement(
                 method, IS_REGEX_METHOD_NAME, String.class, int.class, int[].class)) {
-            return getModifiedStore(n, result, factory);
+            return getIsRegexModifiedStore(n, result, factory);
         } else if (ElementUtils.matchesElement(
                 method, AS_REGEX_METHOD_NAME, String.class, int.class)) {
             return getAsRegexModifiedStore(n, result, factory);
@@ -203,7 +209,7 @@ public class RegexTransfer extends CFTransfer {
      * @param factory the type factory to create relevant types
      * @return the new store after refining the type of the string that was checked.
      */
-    private ConditionalTransferResult<CFValue, CFStore> getModifiedStore(
+    private ConditionalTransferResult<CFValue, CFStore> getIsRegexModifiedStore(
             MethodInvocationNode n,
             TransferResult<CFValue, CFStore> result,
             RegexAnnotatedTypeFactory factory) {

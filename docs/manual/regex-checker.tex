@@ -51,8 +51,8 @@ These qualifiers make up the Regex type system:
   non-null (possibly empty) provided the regular expression matches the
   target string. For example if an expression's type is
   \<RegexNNGroups(groups = 2, nonNullGroups = {1})>, then it's run-time
-  value could be \<"colo(u?)r(s)?"> (group 1 will match some part of the string
-  provided that the regular expression itself matches.)
+  value could be \<"colo(u?)r(s)?"> (group 1 will match some possibly-empty
+  part of the string provided that the regular expression itself matches.)
   but not \<"colo(u)?r(s?)"> (group 1 may or may not match when the regular
   expression matches some string) nor a
   non-regex string such as \<"1) first point">. Note that \code{Regex(1)}

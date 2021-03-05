@@ -179,7 +179,8 @@ public final class RegexUtil {
      *
      * @param s string to check for being a regular expression
      * @param groups minimum number of groups
-     * @param nonNullGroups list of groups that are non-null
+     * @param nonNullGroups groups that are guaranteed to match some part of the target string
+     *     provided it matches the (possible) regular expression {@code s}
      * @return true iff s is a regular expression with {@code groups} groups and groups in {@code
      *     nonNullGroups} are definitely non-null when a string matches the regex
      */
@@ -194,12 +195,10 @@ public final class RegexUtil {
         }
         List<Integer> computedNonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
         if (groups <= getGroupCount(p)) {
-            boolean contains = true;
             for (int e : nonNullGroups) {
-                contains = computedNonNullGroups.contains(e);
-                if (!contains) break;
+                if (!computedNonNullGroups.contains(e)) return false;
             }
-            return contains;
+            return true;
         }
         return false;
     }
@@ -336,10 +335,10 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @RegexNNGroups(groups = groups, nonNullGroups =
-     * nonNullGroups} if it is a regex with at least the given number of groups and the
-     * nonNullGroups are guaranteed to match provided that the regex matches a string, otherwise
-     * throws an error. The purpose of this method is to suppress Regex Checker warnings. It should
-     * be rarely needed.
+     * nonNullGroups} if it is a regex with at least the given number of groups and the groups in
+     * {@code nonNullGroups} are guaranteed to match provided that the regex matches a string,
+     * otherwise throws an error. The purpose of this method is to suppress Regex Checker warnings.
+     * It should be rarely needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
@@ -355,10 +354,19 @@ public final class RegexUtil {
             Pattern p = Pattern.compile(s);
             int actualGroups = getGroupCount(p);
             List<Integer> actualNonNullGroups = getNonNullGroups(p.pattern(), actualGroups);
-            List<Integer> paramNonNullGroups = new ArrayList<>(nonNullGroups.length);
-            for (int e : nonNullGroups) paramNonNullGroups.add(e);
-            if (actualGroups < groups || !actualNonNullGroups.containsAll(paramNonNullGroups)) {
+            boolean containsAll = true;
+            int failingGroup = -1;
+            for (int e : nonNullGroups) {
+                if (!actualNonNullGroups.contains(e)) {
+                    containsAll = false;
+                    failingGroup = e;
+                    break;
+                }
+            }
+            if (actualGroups < groups) {
                 throw new Error(regexErrorMessage(s, groups, actualGroups));
+            } else if (!containsAll) {
+                throw new Error(regexNNGroupsErrorMessage(s, failingGroup));
             }
             return s;
         } catch (PatternSyntaxException e) {
@@ -386,6 +394,15 @@ public final class RegexUtil {
                 + " groups are needed.";
     }
 
+    private static String regexNNGroupsErrorMessage(String s, int nullableGroup) {
+        return "for regex \""
+                + s
+                + "\", call to group("
+                + nullableGroup
+                + ") can return a possibly-null string "
+                + " but is expected to return a non-null string.";
+    }
+
     /**
      * Return the count of groups in the argument.
      *
@@ -400,7 +417,7 @@ public final class RegexUtil {
 
     /**
      * Returns a list of groups other than 0, that are guaranteed to be non-null given that the
-     * regular expression matches the String. The String argument passed is always a regular
+     * regular expression matches the String. The String argument passed has to be a regular
      * expression.
      *
      * @param regexp pattern to be analysed
@@ -415,7 +432,7 @@ public final class RegexUtil {
             throw new Error(e);
         }
         List<Integer> nonNullGroups = new ArrayList<>();
-        // Initialize the list with all elements; the below code will remove some.
+        // Initialize the list with all elements; the below code will remove the optional ones.
         for (int i = 1; i <= n; i++) {
             nonNullGroups.add(i);
         }
@@ -431,14 +448,15 @@ public final class RegexUtil {
         boolean quoted = false; // The part being traversed now is inside \Q ... \E.
         boolean escaped =
                 false; // The character just before the current one was '\', i.e. the current
-        // character has to be considered in a literal sense.
+        // character has to be considered either in a literal sense or as some special character
+        // or flag.
         int group = 0;
 
         /**
-         * If you encounter '(' and it is not quote and is not preceded by a '\', then it is a
-         * special group. If it is followed by a '?', it will be either a named capturing group or
-         * some other special construct. A named capturing group has a '<' followed by the '?'. The
-         * boolean stack is to figure out whether a ')' closes a capturing group or a special
+         * If you encounter '(' and it is not inside a quote and is not preceded by a '\', then it
+         * is a special group. If it is followed by a '?', it will either be a named capturing group
+         * or some other special construct. A named capturing group has a '<' followed by the '?'.
+         * The boolean stack is to figure out whether a ')' closes a capturing group or a special
          * construct.
          *
          * <p>If you encounter a '\' and it is not inside a quote, it defines some sort of flag or
@@ -474,8 +492,8 @@ public final class RegexUtil {
                             openingWasGroup.push(true);
                         }
                     }
-                } else if (escaped) { // escaped won't be true if quoted is true.
-                    escaped = false;
+                } else if (escaped) { // escaped won't be true if quoted is true
+                    escaped = false; // (it can only happen if the current character is 'E'.
                 }
             } else if (regexp.charAt(i) == ')') {
                 if (!escaped && !quoted) { // ending of a construct.
@@ -497,7 +515,8 @@ public final class RegexUtil {
             } else if (regexp.charAt(i) == '\\') {
                 if (!quoted) {
                     escaped =
-                            !escaped; // if it is already escaped, '\' will be matched, if not, now
+                            !escaped; // if it is already escaped, '\' will be matched literally, if
+                    // not, now
                     // escaped becomes true.
                 } else if (i != length - 1 && regexp.charAt(i + 1) == 'E') {
                     escaped = true;
@@ -520,13 +539,12 @@ public final class RegexUtil {
                     escaped = false;
                     quoted = true;
                 }
-                // :: error: (assignment.type.incompatible)
             } else if (regexp.charAt(i) == 'E') {
                 if (quoted && escaped) {
                     escaped = false;
                     quoted = false;
                 }
-            } else {
+            } else { // any other character.
                 if (escaped) escaped = false;
             }
         }

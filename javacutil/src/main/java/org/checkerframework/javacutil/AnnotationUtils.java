@@ -747,47 +747,6 @@ public class AnnotationUtils {
     }
 
     /**
-     * Get the list with name {@code elementName} from the annotation {@code anno}, {@code
-     * elementName} is of type object because it can be both a String or an ExecutableElement.
-     *
-     * @param anno the annotation whose element to access
-     * @param elementName the name of the element to access
-     * @param expectedType the expected type of the elements of the array element
-     * @param <T> the class of the expected type of the elements of the array element
-     * @param la the list of annotation values which correspond to literals in the array
-     * @param useDefaults whether to apply default values to the element
-     * @return the value of the element with the given name as a {@code List}.
-     */
-    private static <T> List<T> getValueArray(
-            AnnotationMirror anno,
-            Object elementName,
-            Class<T> expectedType,
-            boolean useDefaults,
-            List<AnnotationValue> la) {
-        List<T> result = new ArrayList<>(la.size());
-        for (AnnotationValue a : la) {
-            try {
-                result.add(expectedType.cast(a.getValue()));
-            } catch (Throwable t) {
-                String err1 =
-                        String.format(
-                                "getElementValueArray(%n  anno=%s,%n  elementName=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
-                                anno, elementName, expectedType, useDefaults);
-                String err2 =
-                        String.format(
-                                "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
-                                expectedType,
-                                a,
-                                a.getClass(),
-                                a.getValue(),
-                                a.getValue().getClass());
-                throw new BugInCF(err1 + "; " + err2, t);
-            }
-        }
-        return result;
-    }
-
-    /**
      * Get the element with the name {@code elementName} of the annotation {@code anno}, or return
      * null if no such element exists.
      *
@@ -833,9 +792,11 @@ public class AnnotationUtils {
         return value;
     }
 
+    // TODO Replace all the usages of this version of the function by the one that accepts an
+    //  ExecutableElement instead of a CharSequence.
     /**
      * Get the element with the name {@code elementName} of the annotation {@code anno}, where the
-     * element has an array type. One element of the result is expected to have type {@code
+     * element has an array type. An element of the result is expected to have type {@code
      * expectedType}.
      *
      * <p>Parameter useDefaults is used to determine whether default values should be used for
@@ -862,7 +823,7 @@ public class AnnotationUtils {
 
     /**
      * Get the element {@code executableElement} of the annotation {@code anno}, where the element
-     * has an array type. One element of the result is expected to have type {@code expectedType}.
+     * has an array type. An element of the result is expected to have type {@code expectedType}.
      *
      * <p>Parameter useDefaults is used to determine whether default values should be used for
      * annotation values. Finding defaults requires more computation, so should be false when no
@@ -1101,6 +1062,47 @@ public class AnnotationUtils {
         }
 
         return hasTypeUse;
+    }
+
+    /**
+     * Get the list with name {@code elementName} from the annotation {@code anno}, {@code
+     * elementName} is of type object because it can be both a String or an ExecutableElement.
+     *
+     * @param anno the annotation whose element to access
+     * @param elementName the name of the element to access
+     * @param expectedType the expected type of the elements of the array element
+     * @param <T> the class of the expected type of the elements of the array element
+     * @param la the list of annotation values which correspond to literals in the array
+     * @param useDefaults whether to apply default values to the element
+     * @return the value of the element with the given name as a {@code List}.
+     */
+    private static <T> List<T> getValueArray(
+            AnnotationMirror anno,
+            Object elementName,
+            Class<T> expectedType,
+            boolean useDefaults,
+            List<AnnotationValue> la) {
+        List<T> result = new ArrayList<>(la.size());
+        for (AnnotationValue a : la) {
+            try {
+                result.add(expectedType.cast(a.getValue()));
+            } catch (Throwable t) {
+                String err1 =
+                        String.format(
+                                "getElementValueArray(%n  anno=%s,%n  elementName=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
+                                anno, elementName, expectedType, useDefaults);
+                String err2 =
+                        String.format(
+                                "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
+                                expectedType,
+                                a,
+                                a.getClass(),
+                                a.getValue(),
+                                a.getValue().getClass());
+                throw new BugInCF(err1 + "; " + err2, t);
+            }
+        }
+        return result;
     }
 
     /**
