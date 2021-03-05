@@ -49,11 +49,14 @@ These qualifiers make up the Regex type system:
   is the same as the optional parameter for \code{Regex}, \<nonNullGroups>
   is an array that specifies the capturing groups that are definitely
   non-null (possibly empty) provided the regular expression matches the
-  target string,. For example if an expression's type is
-  \<RegexNNGroups(groups = 2, nonNullGroups = {1})>, then its run-time
-  value could be \<"colo(u?)r(s)?"> but not \<"colo(u)?r(s?)"> nor a
+  target string. For example if an expression's type is
+  \<RegexNNGroups(groups = 2, nonNullGroups = {1})>, then it's run-time
+  value could be \<"colo(u?)r(s)?"> (group 1 will match some possibly-empty
+  part of the string provided that the regular expression itself matches.)
+  but not \<"colo(u)?r(s?)"> (group 1 may or may not match when the regular
+  expression matches some string) nor a
   non-regex string such as \<"1) first point">. Note that \code{Regex(1)}
-  is exactly the same as \code{EnhancedRegex(groups = 1)}.
+  is exactly the same as \code{RegexNNGroups(groups = 1)}.
 
 \item[\refqualclass{checker/regex/qual}{PolyRegex}]
   indicates qualifier polymorphism.
@@ -63,7 +66,7 @@ These qualifiers make up the Regex type system:
 \end{description}
 
 The subtyping hierarchy of the Regex Checker's qualifiers is shown in
-Figures~\ref{fig-regex-hierarchy-1} and~\ref{fig-regex-hierarchy-2}.
+Figures~\ref{fig-regex-hierarchy-1} and ~\ref{fig-regex-hierarchy-2}.
 
 \begin{figure}
 \includeimage{regex}{9cm}

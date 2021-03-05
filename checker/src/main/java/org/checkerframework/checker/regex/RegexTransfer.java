@@ -1,7 +1,6 @@
 package org.checkerframework.checker.regex;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -82,110 +81,21 @@ public class RegexTransfer extends CFTransfer {
         RegexAnnotatedTypeFactory factory = (RegexAnnotatedTypeFactory) analysis.getTypeFactory();
 
         // Special cases for some RegexUtil.isRegex and RegexUtil.asRegex methods.  Each one adds an
-        // annotation with elements/arguments if possible, or falls back to just `@Ragex`.
+        // annotation with elements/arguments if possible, or falls back to just `@Regex`.
         // (No special case is needed for isRegex(String) or asRegex(String); their annotations are
         // sufficient.)
 
         if (ElementUtils.matchesElement(method, IS_REGEX_METHOD_NAME, String.class, int.class)) {
-            CFStore thenStore = result.getRegularStore();
-            CFStore elseStore = thenStore.copy();
-            ConditionalTransferResult<CFValue, CFStore> newResult =
-                    new ConditionalTransferResult<>(result.getResultValue(), thenStore, elseStore);
-            JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
-
-            Node count = n.getArgument(1);
-            int groupCount;
-            if (count instanceof IntegerLiteralNode) {
-                groupCount = ((IntegerLiteralNode) count).getValue();
-            } else {
-                groupCount = 0;
-            }
-            AnnotationMirror regexNNGroupsAnnotation =
-                    factory.createRegexNNGroupsAnnotation(groupCount, new ArrayList<>());
-            if (thenStore.getValue(firstParam) != null) thenStore.clearValue(firstParam);
-            thenStore.insertValue(firstParam, regexNNGroupsAnnotation);
-            return newResult;
+            return getIsRegexModifiedStore(n, result, factory);
         } else if (ElementUtils.matchesElement(
                 method, IS_REGEX_METHOD_NAME, String.class, int.class, int[].class)) {
-            CFStore thenStore = result.getRegularStore();
-            CFStore elseStore = thenStore.copy();
-            ConditionalTransferResult<CFValue, CFStore> newResult =
-                    new ConditionalTransferResult<>(result.getResultValue(), thenStore, elseStore);
-            JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
-
-            Node count = n.getArgument(1);
-            int regexNNGroupsGroups;
-            if (count instanceof IntegerLiteralNode) {
-                regexNNGroupsGroups = ((IntegerLiteralNode) count).getValue();
-            } else {
-                regexNNGroupsGroups = 0;
-            }
-            Node nonNullGroups = n.getArgument(2);
-            List<Integer> regexNNGroupsNonNullGroups = new ArrayList<>();
-            if (nonNullGroups instanceof ArrayCreationNode) {
-                ArrayCreationNode nonNullGroupsArray = (ArrayCreationNode) nonNullGroups;
-                List<Node> nonNullList = nonNullGroupsArray.getInitializers();
-                for (Node e : nonNullList) {
-                    if (e instanceof IntegerLiteralNode) {
-                        regexNNGroupsNonNullGroups.add(((IntegerLiteralNode) e).getValue());
-                    }
-                }
-            }
-            AnnotationMirror regexNNGroupsAnnotation =
-                    factory.createRegexNNGroupsAnnotation(
-                            regexNNGroupsGroups, regexNNGroupsNonNullGroups);
-            if (thenStore.getValue(firstParam) != null) thenStore.clearValue(firstParam);
-            thenStore.insertValue(firstParam, regexNNGroupsAnnotation);
-            return newResult;
+            return getIsRegexModifiedStore(n, result, factory);
         } else if (ElementUtils.matchesElement(
                 method, AS_REGEX_METHOD_NAME, String.class, int.class)) {
-            AnnotationMirror regexNNGroupsAnnotation;
-            Node count = n.getArgument(1);
-            int groupCount;
-            if (count instanceof IntegerLiteralNode) {
-                IntegerLiteralNode iln = (IntegerLiteralNode) count;
-                groupCount = iln.getValue();
-            } else {
-                groupCount = 0;
-            }
-            regexNNGroupsAnnotation =
-                    factory.createRegexNNGroupsAnnotation(groupCount, Collections.emptyList());
-
-            CFValue newResultValue =
-                    analysis.createSingleAnnotationValue(
-                            regexNNGroupsAnnotation, result.getResultValue().getUnderlyingType());
-            return new RegularTransferResult<>(newResultValue, result.getRegularStore());
+            return getAsRegexModifiedStore(n, result, factory);
         } else if (ElementUtils.matchesElement(
                 method, AS_REGEX_METHOD_NAME, String.class, int.class, int[].class)) {
-            AnnotationMirror regexNNGroupsAnnotation;
-            Node count = n.getArgument(1);
-            int groupCount = 0;
-            if (count instanceof IntegerLiteralNode) {
-                IntegerLiteralNode iln = (IntegerLiteralNode) count;
-                groupCount = iln.getValue();
-            }
-
-            Node nonNulls = n.getArgument(2);
-            List<Integer> nonNullGroups;
-            if (nonNulls instanceof ArrayCreationNode) {
-                ArrayCreationNode acn = (ArrayCreationNode) nonNulls;
-                List<Node> nonNullNodes = acn.getInitializers();
-                nonNullGroups = new ArrayList<>();
-                for (Node e : nonNullNodes) {
-                    if (e instanceof IntegerLiteralNode) {
-                        nonNullGroups.add(((IntegerLiteralNode) e).getValue());
-                    }
-                }
-            } else {
-                nonNullGroups = Collections.emptyList();
-            }
-            regexNNGroupsAnnotation =
-                    factory.createRegexNNGroupsAnnotation(groupCount, nonNullGroups);
-
-            CFValue newResultValue =
-                    analysis.createSingleAnnotationValue(
-                            regexNNGroupsAnnotation, result.getResultValue().getUnderlyingType());
-            return new RegularTransferResult<>(newResultValue, result.getRegularStore());
+            return getAsRegexModifiedStore(n, result, factory);
         }
         return result;
     }
@@ -289,5 +199,74 @@ public class RegexTransfer extends CFTransfer {
      */
     private boolean isRegexUtil(String receiver) {
         return receiver.equals("RegexUtil") || receiver.endsWith(".RegexUtil");
+    }
+
+    /**
+     * The new store with types modified on the basis of {@code isRegex} test.
+     *
+     * @param n the {@code RegexUtil.isRegex} method invocation
+     * @param result the store just before the invocation is encountered
+     * @param factory the type factory to create relevant types
+     * @return the new store after refining the type of the string that was checked.
+     */
+    private ConditionalTransferResult<CFValue, CFStore> getIsRegexModifiedStore(
+            MethodInvocationNode n,
+            TransferResult<CFValue, CFStore> result,
+            RegexAnnotatedTypeFactory factory) {
+        CFStore thenStore = result.getRegularStore();
+        CFStore elseStore = thenStore.copy();
+        ConditionalTransferResult<CFValue, CFStore> newResult =
+                new ConditionalTransferResult<>(result.getResultValue(), thenStore, elseStore);
+        JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
+
+        AnnotationMirror regexNNGroupsAnnotation = getRegexNNGroupsAnno(factory, n.getArguments());
+        if (thenStore.getValue(firstParam) != null) thenStore.clearValue(firstParam);
+        thenStore.insertValue(firstParam, regexNNGroupsAnnotation);
+        return newResult;
+    }
+
+    /**
+     * The new store with modified on the basis of {@code asRegex} refinement.
+     *
+     * @param n the {@code RegexUtil.isRegex} method invocation
+     * @param result the store just before the invocation is encountered
+     * @param factory the type factory to create relevant types
+     * @return the new store after refining the type of the string that was refined.
+     */
+    private TransferResult<CFValue, CFStore> getAsRegexModifiedStore(
+            MethodInvocationNode n,
+            TransferResult<CFValue, CFStore> result,
+            RegexAnnotatedTypeFactory factory) {
+        AnnotationMirror regexNNGroupsAnnotation = getRegexNNGroupsAnno(factory, n.getArguments());
+        CFValue newResultValue =
+                analysis.createSingleAnnotationValue(
+                        regexNNGroupsAnnotation, result.getResultValue().getUnderlyingType());
+        return new RegularTransferResult<>(newResultValue, result.getRegularStore());
+    }
+
+    /**
+     * Returns the {@code @RegexNNGroups} annotation with relevant field values.
+     *
+     * @param factory the type factory to create types
+     * @param nodes arguments passed to the {@code RegexUtil} functions
+     * @return the {@code @RegexNNGroups} annotation.
+     */
+    private AnnotationMirror getRegexNNGroupsAnno(
+            RegexAnnotatedTypeFactory factory, List<Node> nodes) {
+        int groupCount = 0;
+        List<Integer> nonNullGroups = new ArrayList<>();
+        for (Node e : nodes) {
+            if (e instanceof IntegerLiteralNode) {
+                groupCount = ((IntegerLiteralNode) e).getValue();
+            } else if (e instanceof ArrayCreationNode) {
+                List<Node> nonNullNodes = ((ArrayCreationNode) e).getInitializers();
+                for (Node inits : nonNullNodes) {
+                    if (inits instanceof IntegerLiteralNode) {
+                        nonNullGroups.add(((IntegerLiteralNode) inits).getValue());
+                    }
+                }
+            }
+        }
+        return factory.createRegexNNGroupsAnnotation(groupCount, nonNullGroups);
     }
 }
