@@ -178,10 +178,10 @@ public final class RegexUtil {
      * groups as definitely non-null.
      *
      * @param s string to check for being a regular expression
-     * @param groups number of groups expected.
-     * @param nonNullGroups list of expected non-null groups.
+     * @param groups minimum number of groups
+     * @param nonNullGroups list of groups that are non-null
      * @return true iff s is a regular expression with {@code groups} groups and groups in {@code
-     *     nonNullGroups} are definitely non-null when a string matches the regex.
+     *     nonNullGroups} are definitely non-null when a string matches the regex
      */
     @Pure
     @EnsuresQualifierIf(result = true, expression = "#1", qualifier = RegexNNGroups.class)
@@ -315,7 +315,7 @@ public final class RegexUtil {
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
      * @return its argument
-     * @throws Error if argument is not a regex
+     * @throws Error if argument is not a regex with at least the given number of groups
      */
     @SuppressWarnings("regex") // RegexUtil
     @SideEffectFree
@@ -346,7 +346,7 @@ public final class RegexUtil {
      * @param nonNullGroups groups expected to be match some part of a target string when the regex
      *     matches
      * @return its argument
-     * @throws Error if argument is not a regex
+     * @throws Error if argument is not a regex with the specified characteristics
      */
     @SuppressWarnings("regex")
     @SideEffectFree
@@ -415,7 +415,10 @@ public final class RegexUtil {
             throw new Error(e);
         }
         List<Integer> nonNullGroups = new ArrayList<>();
-        for (int i = 1; i <= n; i++) nonNullGroups.add(i);
+        // Initialize the list with all elements; the below code will remove some.
+        for (int i = 1; i <= n; i++) {
+            nonNullGroups.add(i);
+        }
 
         // Holds all indices of opening brackets that were openings of a capturing group.
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();

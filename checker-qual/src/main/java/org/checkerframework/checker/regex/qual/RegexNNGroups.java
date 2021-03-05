@@ -34,7 +34,7 @@ public @interface RegexNNGroups {
      * An array of groups other than 0, that are guaranteed to be non-null provided the input String
      * matches the regular expression. Defaults to an empty list.
      *
-     * @return list of non-null groups.
+     * @return list of non-null groups
      */
     int[] nonNullGroups() default {};
 }

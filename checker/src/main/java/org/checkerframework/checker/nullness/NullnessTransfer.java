@@ -394,7 +394,7 @@ public class NullnessTransfer
         }
 
         // Refine result to @NonNull if n is an invocation of Matcher.group and the group number in
-        // the invocation is verified to return a NonNull String provided the Pattern matches.
+        // the invocation is returns a NonNull String provided the Pattern matches.
         if (regexTypeFactory != null && regexTypeFactory.isMatcherGroup(n)) {
             AnnotationMirror receiverType =
                     regexTypeFactory.getAnnotationMirror(receiver.getTree(), RegexNNGroups.class);

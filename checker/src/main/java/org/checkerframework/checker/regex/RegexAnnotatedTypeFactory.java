@@ -262,17 +262,9 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 List<Integer> lhsValue = getRegexNonNullGroups(superAnno);
                 int rhsGroupCount = getGroupCount(subAnno);
                 int lhsGroupCount = getGroupCount(superAnno);
-                if (rhsGroupCount >= lhsGroupCount) {
-                    // if number of groups in rhs is at least as much as the number of groups in lhs
-                    // and rhs is more specific (specifies more non null groups) then it is a
-                    // subtype
-                    // of lhs.
-                    return rhsValue.containsAll(lhsValue);
-                } else {
-                    // if lhs specifies more groups than rhs then it is more specific and thus rhs
-                    // is not a subtype of lhs.
-                    return false;
-                }
+                // It's a subtype if rhs number of groups is at least as much
+                // and rhs specifies at least as many non-null groups.
+                return rhsGroupCount >= lhsGroupCount && rhsValue.containsAll(lhsValue);
             } else if (subKind == REGEXNNGROUPS_KIND && superKind == REGEX_KIND) {
                 int rhsGroupCount = getGroupCount(subAnno);
                 int lhsGroupCount = getRegexValue(superAnno);
@@ -460,8 +452,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     AnnotationUtils.getElementValuesWithDefaults(anno)
                             .get(regexNNGroupsGroupCountElement);
             if (groupCountValue != null) {
-                Object value = groupCountValue.getValue();
-                return (Integer) value;
+                return (Integer) groupCountValue.getValue();
             }
         }
         return 0;
