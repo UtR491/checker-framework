@@ -746,6 +746,35 @@ public class AnnotationUtils {
         }
     }
 
+    private static <T> List<T> getValueArray(
+            AnnotationMirror anno,
+            Object elementName,
+            Class<T> expectedType,
+            boolean useDefaults,
+            List<AnnotationValue> la) {
+        List<T> result = new ArrayList<>(la.size());
+        for (AnnotationValue a : la) {
+            try {
+                result.add(expectedType.cast(a.getValue()));
+            } catch (Throwable t) {
+                String err1 =
+                        String.format(
+                                "getElementValueArray(%n  anno=%s,%n  elementName=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
+                                anno, elementName, expectedType, useDefaults);
+                String err2 =
+                        String.format(
+                                "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
+                                expectedType,
+                                a,
+                                a.getClass(),
+                                a.getValue(),
+                                a.getValue().getClass());
+                throw new BugInCF(err1 + "; " + err2, t);
+            }
+        }
+        return result;
+    }
+
     /**
      * Get the element with the name {@code elementName} of the annotation {@code anno}, or return
      * null if no such element exists.
@@ -816,27 +845,7 @@ public class AnnotationUtils {
             boolean useDefaults) {
         @SuppressWarnings("unchecked")
         List<AnnotationValue> la = getElementValue(anno, elementName, List.class, useDefaults);
-        List<T> result = new ArrayList<>(la.size());
-        for (AnnotationValue a : la) {
-            try {
-                result.add(expectedType.cast(a.getValue()));
-            } catch (Throwable t) {
-                String err1 =
-                        String.format(
-                                "getElementValueArray(%n  anno=%s,%n  elementName=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
-                                anno, elementName, expectedType, useDefaults);
-                String err2 =
-                        String.format(
-                                "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
-                                expectedType,
-                                a,
-                                a.getClass(),
-                                a.getValue(),
-                                a.getValue().getClass());
-                throw new BugInCF(err1 + "; " + err2, t);
-            }
-        }
-        return result;
+        return getValueArray(anno, elementName, expectedType, useDefaults, la);
     }
 
     /**
@@ -869,27 +878,7 @@ public class AnnotationUtils {
                                 : useDefaults
                                         ? executableElement.getDefaultValue().getValue()
                                         : Collections.EMPTY_LIST);
-        List<T> result = new ArrayList<>(la.size());
-        for (AnnotationValue a : la) {
-            try {
-                result.add(expectedType.cast(a.getValue()));
-            } catch (Throwable t) {
-                String err1 =
-                        String.format(
-                                "getElementValueArray(%n  anno=%s,%n  executableElement=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
-                                anno, executableElement, expectedType, useDefaults);
-                String err2 =
-                        String.format(
-                                "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
-                                expectedType,
-                                a,
-                                a.getClass(),
-                                a.getValue(),
-                                a.getValue().getClass());
-                throw new BugInCF(err1 + "; " + err2, t);
-            }
-        }
-        return result;
+        return getValueArray(anno, executableElement, expectedType, useDefaults, la);
     }
 
     /**

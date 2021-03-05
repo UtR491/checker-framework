@@ -10,8 +10,7 @@ public class RegexNNGroupsTest {
         @RegexNNGroups String regexp1 = "(a?).(abc)";
         // legal
 
-        @RegexNNGroups(groups = 2)
-        String regexp2 = "(a?).(abc)";
+        @RegexNNGroups(groups = 2) String regexp2 = "(a?).(abc)";
         // legal
         @RegexNNGroups(
                 groups = 2,
