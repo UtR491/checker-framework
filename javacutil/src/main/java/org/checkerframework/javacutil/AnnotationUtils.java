@@ -746,6 +746,18 @@ public class AnnotationUtils {
         }
     }
 
+    /**
+     * Get the list with name {@code elementName} from the annotation {@code anno}, {@code
+     * elementName} is of type object because it can be both a String or an ExecutableElement.
+     *
+     * @param anno the annotation whose element to access
+     * @param elementName the name of the element to access
+     * @param expectedType the expected type of the elements of the array element
+     * @param <T> the class of the expected type of the elements of the array element
+     * @param la the list of annotation values which correspond to literals in the array
+     * @param useDefaults whether to apply default values to the element
+     * @return the value of the element with the given name as a {@code List}.
+     */
     private static <T> List<T> getValueArray(
             AnnotationMirror anno,
             Object elementName,
