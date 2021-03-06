@@ -418,12 +418,13 @@ public final class RegexUtil {
 
     /**
      * Returns a list of groups other than 0, that are guaranteed to be non-null given that the
-     * regular expression matches the String. The String argument passed has to be a regular
+     * regular expression matches the String. The String argument passed has to be a valid regular
      * expression.
      *
      * @param regexp pattern to be analysed
      * @param n number of capturing groups in the pattern
-     * @return the groups that are non-null in the argument
+     * @return a {@code List} of groups that are guaranteed to match some part of a string that
+     *     matches {@code regexp}
      * @throws Error if the argument is not a regex
      */
     public static List<Integer> getNonNullGroups(String regexp, int n) {
@@ -433,10 +434,7 @@ public final class RegexUtil {
             throw new Error(e);
         }
         List<Integer> nonNullGroups = new ArrayList<>();
-        // Initialize the list with all elements; the below code will remove the optional ones.
-        for (int i = 1; i <= n; i++) {
-            nonNullGroups.add(i);
-        }
+        for (int i = 1; i <= n; i++) nonNullGroups.add(i);
 
         // Holds all indices of opening brackets that were openings of a capturing group.
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
@@ -446,7 +444,6 @@ public final class RegexUtil {
         // ')' closes a capturing group or some other special construct. If it closes a capturing
         // group, the top element from openingIndices has to be removed.
         ArrayDeque<Boolean> openingWasGroup = new ArrayDeque<>();
-        boolean quoted = false; // The part being traversed now is inside \Q ... \E.
         boolean escaped =
                 false; // The character just before the current one was '\', i.e. the current
         // character has to be considered either in a literal sense or as some special character
@@ -454,25 +451,25 @@ public final class RegexUtil {
         int group = 0;
 
         /**
-         * If you encounter '(' and it is not inside a quote and is not preceded by a '\', then it
-         * is a special group. If it is followed by a '?', it will either be a named capturing group
-         * or some other special construct. A named capturing group has a '<' followed by the '?'.
-         * The boolean stack is to figure out whether a ')' closes a capturing group or a special
-         * construct.
+         * If you encounter '(' and it is not preceded by a '\', then it is a special group. If it
+         * is followed by a '?', it will either be a named capturing group or some other special
+         * construct. A named capturing group has a '<' followed by the '?'. The boolean stack is to
+         * figure out whether a ')' closes a capturing group or a special construct.
          *
-         * <p>If you encounter a '\' and it is not inside a quote, it defines some sort of flag or
-         * special character. If you are inside a quote and '\' is followed immediately by 'E', it
-         * is there to mark the end of the quote so '\' is not there in a literal sense and the
-         * following 'E' can be considered as escaped (i.e. escaped can be assigned true).
+         * <p>If you encounter a '\' it defines some sort of flag or special character. If the '\'
+         * is preceded by another '\', it represents the literal '\'
          *
-         * <p>If you are not inside a quote and you encounter a '[' and it was not preceded by a
-         * '\', it marks the beginning of a literal list. Traverse inside the list till you
-         * encounter the closing ']', then resume normal traversal.
+         * <p>If you encounter a '[' and it was not preceded by a '\', it marks the beginning of a
+         * literal list. Traverse inside the list till you encounter the closing ']', then resume
+         * normal traversal.
+         *
+         * <p>If you encounter a 'Q' which is preceded by a '\', it marks the beginning of a quote,
+         * traverse, till you find the corresponding '\E', then resume normal traversal.
          */
         final int length = regexp.length();
         for (int i = 0; i < length; i++) {
             if (regexp.charAt(i) == '(') {
-                if (!escaped && !quoted) {
+                if (!escaped) {
                     if (i != length - 1) {
                         if (regexp.charAt(i + 1) == '?') {
                             if (i < length - 2
@@ -493,11 +490,11 @@ public final class RegexUtil {
                             openingWasGroup.push(true);
                         }
                     }
-                } else if (escaped) { // escaped won't be true if quoted is true
-                    escaped = false; // (it can only happen if the current character is 'E'.
+                } else {
+                    escaped = false;
                 }
             } else if (regexp.charAt(i) == ')') {
-                if (!escaped && !quoted) { // ending of a construct.
+                if (!escaped) { // ending of a construct.
                     boolean closesGroup = openingWasGroup.pop();
                     if (closesGroup) {
                         int value = openingIndices.pop();
@@ -510,20 +507,13 @@ public final class RegexUtil {
                             nonNullGroups.remove(Integer.valueOf(value));
                         }
                     }
-                } else if (escaped) {
+                } else {
                     escaped = false;
                 }
             } else if (regexp.charAt(i) == '\\') {
-                if (!quoted) {
-                    escaped =
-                            !escaped; // if it is already escaped, '\' will be matched literally, if
-                    // not, now
-                    // escaped becomes true.
-                } else if (i != length - 1 && regexp.charAt(i + 1) == 'E') {
-                    escaped = true;
-                }
+                escaped = !escaped;
             } else if (regexp.charAt(i) == '[') {
-                if (!escaped && !quoted) {
+                if (!escaped) {
                     int balance = 1;
                     int j;
                     for (j = i + 1; balance > 0; j++) {
@@ -532,19 +522,14 @@ public final class RegexUtil {
                         else if (escaped) escaped = false;
                     }
                     i = j - 1;
-                } else if (escaped) {
+                } else {
                     escaped = false;
                 }
             } else if (regexp.charAt(i) == 'Q') {
-                if (!quoted && escaped) {
+                if (escaped) {
                     escaped = false;
-                    quoted = true;
                 }
-            } else if (regexp.charAt(i) == 'E') {
-                if (quoted && escaped) {
-                    escaped = false;
-                    quoted = false;
-                }
+                i = regexp.indexOf("\\E", i) + 1;
             } else { // any other character.
                 if (escaped) escaped = false;
             }
