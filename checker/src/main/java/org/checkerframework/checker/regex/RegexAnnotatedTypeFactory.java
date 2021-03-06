@@ -8,7 +8,6 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -522,13 +521,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 if (regex != null) {
                     if (RegexUtil.isRegex(regex)) {
                         int groupCount = getGroupCount(regex);
-                        BitSet nonNullGroupsBoolean = RegexUtil.getNonNullGroups(regex, groupCount);
-                        List<Integer> nonNullGroups =
-                                new ArrayList<>(nonNullGroupsBoolean.cardinality());
-                        for (int i = nonNullGroupsBoolean.nextSetBit(0);
-                                i != -1;
-                                i = nonNullGroupsBoolean.nextSetBit(i + 1)) nonNullGroups.add(i);
-                        // type.addAnnotation(createRegexAnnotation(groupCount));
+                        List<Integer> nonNullGroups = RegexUtil.getNonNullGroups(regex, groupCount);
                         type.addAnnotation(
                                 createRegexNNGroupsAnnotation(groupCount, nonNullGroups));
                     } else {
@@ -591,12 +584,7 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     String concat = lRegex + rRegex;
                     if (RegexUtil.isRegex(concat)) {
                         int groups = getGroupCount(concat);
-                        BitSet nonNullGroupsBoolean = RegexUtil.getNonNullGroups(concat, groups);
-                        List<Integer> nonNullGroups =
-                                new ArrayList<>(nonNullGroupsBoolean.cardinality());
-                        for (int i = nonNullGroupsBoolean.nextSetBit(0);
-                                i != -1;
-                                i = nonNullGroupsBoolean.nextSetBit(i + 1)) nonNullGroups.add(i);
+                        List<Integer> nonNullGroups = RegexUtil.getNonNullGroups(concat, groups);
                         type.addAnnotation(createRegexNNGroupsAnnotation(groups, nonNullGroups));
                     } else {
                         type.addAnnotation(createPartialRegexAnnotation(concat));

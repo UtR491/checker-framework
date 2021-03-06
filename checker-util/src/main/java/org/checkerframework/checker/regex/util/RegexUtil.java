@@ -195,11 +195,7 @@ public final class RegexUtil {
         } catch (PatternSyntaxException e) {
             return false;
         }
-        BitSet nonNullGroupsBoolean = getNonNullGroups(p.pattern(), getGroupCount(p));
-        List<Integer> computedNonNullGroups = new ArrayList<>(nonNullGroupsBoolean.cardinality());
-        for (int i = nonNullGroupsBoolean.nextSetBit(0);
-                i != -1;
-                i = nonNullGroupsBoolean.nextSetBit(i + 1)) computedNonNullGroups.add(i);
+        List<Integer> computedNonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
         if (groups <= getGroupCount(p)) {
             for (int e : nonNullGroups) {
                 if (!computedNonNullGroups.contains(e)) return false;
@@ -359,11 +355,7 @@ public final class RegexUtil {
         try {
             Pattern p = Pattern.compile(s);
             int actualGroups = getGroupCount(p);
-            BitSet nonNullGroupsBoolean = getNonNullGroups(p.pattern(), actualGroups);
-            List<Integer> actualNonNullGroups = new ArrayList<>(nonNullGroupsBoolean.cardinality());
-            for (int i = nonNullGroupsBoolean.nextSetBit(0);
-                    i != -1;
-                    i = nonNullGroupsBoolean.nextSetBit(i + 1)) actualNonNullGroups.add(i);
+            List<Integer> actualNonNullGroups = getNonNullGroups(p.pattern(), actualGroups);
             boolean containsAll = true;
             int failingGroup = -1;
             for (int e : nonNullGroups) {
@@ -432,10 +424,11 @@ public final class RegexUtil {
      *
      * @param regexp pattern to be analysed
      * @param n number of capturing groups in the pattern
-     * @return a {@code BitSet} with bits corresponding to the non-null groups set to 1.
+     * @return a {@code List} of groups that are guaranteed to match some part of a string that
+     *     matches {@code regexp}
      * @throws Error if the argument is not a regex
      */
-    public static BitSet getNonNullGroups(String regexp, int n) {
+    public static List<Integer> getNonNullGroups(String regexp, int n) {
         try {
             Pattern.compile(regexp);
         } catch (PatternSyntaxException e) {
@@ -521,9 +514,7 @@ public final class RegexUtil {
                     escaped = false;
                 }
             } else if (regexp.charAt(i) == '\\') {
-                if (i != length - 1 && regexp.charAt(i + 1) == 'E') {
-                    escaped = true;
-                }
+                escaped = !escaped;
             } else if (regexp.charAt(i) == '[') {
                 if (!escaped) {
                     int balance = 1;
@@ -546,6 +537,10 @@ public final class RegexUtil {
                 if (escaped) escaped = false;
             }
         }
-        return nonNullGroups;
+        List<Integer> retNonNullGroups = new ArrayList<>(nonNullGroups.cardinality());
+        for (int i = nonNullGroups.nextSetBit(0); i != -1; i++) {
+            retNonNullGroups.add(i);
+        }
+        return retNonNullGroups;
     }
 }
