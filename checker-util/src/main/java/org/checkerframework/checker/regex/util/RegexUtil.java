@@ -5,7 +5,6 @@ package org.checkerframework.checker.regex.util;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -434,11 +433,8 @@ public final class RegexUtil {
         } catch (PatternSyntaxException e) {
             throw new Error(e);
         }
-        BitSet nonNullGroups = new BitSet();
-        // Initialize the list with all elements; the below code will remove the optional ones.
-        for (int i = 1; i <= n; i++) {
-            nonNullGroups.set(i);
-        }
+        List<Integer> nonNullGroups = new ArrayList<>();
+        for (int i = 1; i <= n; i++) nonNullGroups.add(i);
 
         // Holds all indices of opening brackets that were openings of a capturing group.
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
@@ -480,7 +476,7 @@ public final class RegexUtil {
                                     && regexp.charAt(i + 2) == '<') { // named capturing group.
                                 group += 1;
                                 if (i != 0 && regexp.charAt(i - 1) == '|')
-                                    nonNullGroups.flip(group);
+                                    nonNullGroups.remove(Integer.valueOf(group));
                                 openingIndices.push(group);
                                 openingWasGroup.push(true);
                             } else { // non capturing group.
@@ -488,7 +484,8 @@ public final class RegexUtil {
                             }
                         } else { // unnamed capturing group.
                             group += 1;
-                            if (i != 0 && regexp.charAt(i - 1) == '|') nonNullGroups.flip(group);
+                            if (i != 0 && regexp.charAt(i - 1) == '|')
+                                nonNullGroups.remove(Integer.valueOf(group));
                             openingIndices.push(group);
                             openingWasGroup.push(true);
                         }
@@ -503,11 +500,11 @@ public final class RegexUtil {
                         int value = openingIndices.pop();
                         if (i != regexp.length() - 1
                                 && "?|*".contains(Character.toString(regexp.charAt(i + 1)))) {
-                            nonNullGroups.flip(value);
+                            nonNullGroups.remove(Integer.valueOf(value));
                         } else if (i < length - 2
                                 && regexp.charAt(i + 1) == '{'
                                 && regexp.charAt(i + 2) == '0') {
-                            nonNullGroups.flip(value);
+                            nonNullGroups.remove(Integer.valueOf(value));
                         }
                     }
                 } else {
@@ -537,10 +534,6 @@ public final class RegexUtil {
                 if (escaped) escaped = false;
             }
         }
-        List<Integer> retNonNullGroups = new ArrayList<>(nonNullGroups.cardinality());
-        for (int i = nonNullGroups.nextSetBit(0); i != -1; i++) {
-            retNonNullGroups.add(i);
-        }
-        return retNonNullGroups;
+        return nonNullGroups;
     }
 }
