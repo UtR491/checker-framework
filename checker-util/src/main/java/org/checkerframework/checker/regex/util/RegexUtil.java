@@ -444,111 +444,115 @@ public final class RegexUtil {
             nonNullGroups.add(i);
         }
 
-        // Holds all indices of opening parentheses that were openings of a capturing group.
+        // ArrayDeque here is used as a stack.
+        // We need stack functionality because brackets that were opened last need to be closed
+        // first. The openingIndices stack helps us keep track of which groups are still not closed.
+        // The openingWasGroup stack helps us to know whether the last '(' encountered was a
+        // capturing
+        // group or a non-capturing group. We need to know this because when we encounter a ')', we
+        // should know whether we are closing a capturing group or a non-capturing group.
+
+        // Indices of the groups that are currently not closed.
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
-        // Holds whether the last occurrence of a non-literal '(' was a capturing group (true)
-        // or was some other special construct (false). This helps in determining whether a
-        // non-literal
-        // ')' closes a capturing group or some other special construct. If it closes a capturing
-        // group, the top element from openingIndices has to be removed.
+        // Whether the last occurrence of '(' marked a capturing group (true) or a non-capturing
+        // group (false).
         ArrayDeque<Boolean> openingWasGroup = new ArrayDeque<>();
-        // If true, the character just before the current one was '\', i.e. the current character
-        // has to be considered either in a literal sense or as some special character or flag.
-        boolean escaped = false;
+        // Number of capturing groups encountered.
         int group = 0;
 
-        /**
-         * If you encounter '(' and it is not preceded by a '\', then it is a special group. If it
-         * is followed by a '?', it will either be a named capturing group or some other special
-         * construct. A named capturing group has a '<' followed by the '?'. The boolean stack is to
-         * figure out whether a ')' closes a capturing group or a special construct.
-         *
-         * <p>If you encounter a '\' it defines some sort of flag or special character. If the '\'
-         * is preceded by another '\', it represents the literal '\'.
-         *
-         * <p>If you encounter a '[' and it was not preceded by a '\', it marks the beginning of a
-         * literal list. Traverse inside the list till you encounter the closing ']', then resume
-         * normal traversal.
-         *
-         * <p>If you encounter a 'Q' which is preceded by a '\', it marks the beginning of a quote.
-         * Traverse until you find the corresponding '\E', then resume normal traversal.
-         */
+        // Optional group here means a capturing group i, which may not match any part of a text
+        // that matched the regular expression and thus may return null on calls to
+        // matcher.group(i).
+
+        // If you encounter '(', check the next character. If it is a '?', it is a special
+        // construct,
+        // (either pure, non-capturing groups that do not capture text and do not count towards the
+        // group total, or named-capturing group) and we need to check the next character. If it
+        // is a '<' the '(' represents the opening of a named-capturing group and it will be handled
+        // like a normal capturing group. If the '(' was not followed by a '?', it is a normal
+        // capturing group.
+        // In case of capturing groups, increment the group variable and push it to the
+        // openingIndices deque. Push true to the openingWasGroup deque. In case of non-capturing
+        // groups, push false to the openingWasGroup deque. We need the boolean deque so that when
+        // we encounter a ')', we can know whether it closes a capturing group (the top element is
+        // true) or a non-capturing group (the top element is false).
+        // One additional check is required. If '(' represented a capturing a group and was preceded
+        // by '|', it is an optional group.
+
+        // If you encounter ')', check the top of the openingWasGroup deque. If it was false, do
+        // nothing otherwise check if it is followed by a '?', '*', '|' or '{0'. If it is, then it
+        // is an optional group otherwise not.
+
+        // If you encounter '[', traverse the regex till you find the closing '[', you may encounter
+        // more of '[' in the process, keep a track of the number of character classes that are
+        // still open. Keep on traversing till the number becomes 0. After this resume normal
+        // traversal.
+
+        // If you encounter '\', check the next character. If it is not 'Q', skip the next
+        // character.
+        // If it is 'Q', it marks the beginning of a literal quote, find the next occurrence of
+        // '\E', which marks the end of quote. Set the loop variable to the index of 'E' and resume
+        // normal traversal.
+
         final int length = regexp.length();
         for (int i = 0; i < length; i++) {
             if (regexp.charAt(i) == '(') {
-                if (!escaped) {
-                    if (i != length - 1) {
-                        if (regexp.charAt(i + 1) == '?') {
-                            if (i < length - 2
-                                    && regexp.charAt(i + 2) == '<') { // named capturing group.
-                                group += 1;
-                                if (i != 0 && regexp.charAt(i - 1) == '|') {
-                                    nonNullGroups.remove(Integer.valueOf(group));
-                                }
-                                openingIndices.push(group);
-                                openingWasGroup.push(true);
-                            } else { // non capturing group.
-                                openingWasGroup.push(false);
-                            }
-                        } else { // unnamed capturing group.
-                            group += 1;
-                            if (i != 0 && regexp.charAt(i - 1) == '|') {
-                                nonNullGroups.remove(Integer.valueOf(group));
-                            }
-                            openingIndices.push(group);
-                            openingWasGroup.push(true);
-                        }
+                boolean capturingGroup = false;
+                if (i < length - 1 && regexp.charAt(i + 1) == '?') {
+                    if (i < length - 2 && regexp.charAt(i + 2) == '<') { // named capturing group.
+                        group += 1;
+                        openingIndices.push(group);
+                        openingWasGroup.push(true);
+                        capturingGroup = true;
+                    } else { // non-capturing group.
+                        openingWasGroup.push(false);
                     }
-                } else {
-                    escaped = false;
+                } else { // unnamed capturing group.
+                    group += 1;
+                    openingIndices.push(group);
+                    openingWasGroup.push(true);
+                    capturingGroup = true;
+                }
+                if (capturingGroup) {
+                    if (i > 0 && regexp.charAt(i - 1) == '|') {
+                        nonNullGroups.remove(Integer.valueOf(group));
+                    }
                 }
             } else if (regexp.charAt(i) == ')') {
-                if (!escaped) { // ending of a construct.
-                    boolean closesGroup = openingWasGroup.pop();
-                    if (closesGroup) {
-                        int value = openingIndices.pop();
-                        if (i != regexp.length() - 1
-                                && "?|*".contains(Character.toString(regexp.charAt(i + 1)))) {
-                            nonNullGroups.remove(Integer.valueOf(value));
-                        } else if (i < length - 2
-                                && regexp.charAt(i + 1) == '{'
-                                && regexp.charAt(i + 2) == '0') {
-                            nonNullGroups.remove(Integer.valueOf(value));
-                        }
+                boolean closesGroup = openingWasGroup.pop();
+                if (closesGroup) {
+                    Integer closedGroupIndex = openingIndices.pop();
+                    nonNullGroups.remove(closedGroupIndex);
+                    if (i < length - 1 && "?*|".contains(String.valueOf(regexp.charAt(i + 1)))) {
+                        nonNullGroups.remove(closedGroupIndex);
+                    } else if (i < length - 2 && regexp.substring(i + 1, i + 2).equals("{0")) {
+                        nonNullGroups.remove(closedGroupIndex);
                     }
-                } else {
-                    escaped = false;
+                }
+            } else if (regexp.charAt(i) == '[') {
+                int balance = 1;
+                for (int j = i + 1; j < length && balance > 0; j++) {
+                    if (regexp.charAt(j) == '[') balance += 1;
+                    else if (regexp.charAt(j) == ']') balance -= 1;
+                    else if (regexp.charAt(j) == '\\') j = resumeFromHere(regexp, j);
                 }
             } else if (regexp.charAt(i) == '\\') {
-                escaped = !escaped;
-            } else if (regexp.charAt(i) == '[') {
-                if (!escaped) {
-                    int balance = 1;
-                    int j;
-                    for (j = i + 1; balance > 0; j++) {
-                        if (regexp.charAt(j) == '\\') {
-                            escaped = !escaped;
-                        } else if (regexp.charAt(j) == ']' && !escaped) {
-                            balance -= 1;
-                        } else if (escaped) {
-                            escaped = false;
-                        }
-                    }
-                    i = j - 1;
-                } else {
-                    escaped = false;
-                }
-            } else if (regexp.charAt(i) == 'Q') {
-                if (escaped) {
-                    escaped = false;
-                }
-                i = regexp.indexOf("\\E", i) + 1;
-            } else { // any other character.
-                if (escaped) {
-                    escaped = false;
-                }
+                i = resumeFromHere(regexp, i);
             }
         }
         return nonNullGroups;
+    }
+
+    /**
+     * Returns the index till which the regex can be skipped, when '\' is encountered.
+     *
+     * @param regexp the regular expression to analyse
+     * @param st the index of the '\' to which causes the skip
+     * @return the index till which the traversal can be skipped
+     */
+    private static int resumeFromHere(String regexp, int st) {
+        int length = regexp.length();
+        if (st < length - 1 && regexp.charAt(st + 1) != 'Q') return st + 1;
+        return regexp.indexOf("\\E", st) + 1;
     }
 }
