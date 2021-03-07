@@ -197,7 +197,9 @@ public final class RegexUtil {
         List<Integer> computedNonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
         if (groups <= getGroupCount(p)) {
             for (int e : nonNullGroups) {
-                if (!computedNonNullGroups.contains(e)) return false;
+                if (!computedNonNullGroups.contains(e)) {
+                    return false;
+                }
             }
             return true;
         }
@@ -434,9 +436,11 @@ public final class RegexUtil {
             throw new Error(e);
         }
         List<Integer> nonNullGroups = new ArrayList<>();
-        for (int i = 1; i <= n; i++) nonNullGroups.add(i);
+        for (int i = 1; i <= n; i++) {
+            nonNullGroups.add(i);
+        }
 
-        // Holds all indices of opening brackets that were openings of a capturing group.
+        // Holds all indices of opening parentheses that were openings of a capturing group.
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
         // Holds whether the last occurrence of a non-literal '(' was a capturing group (true)
         // or was some other special construct (false). This helps in determining whether a
@@ -475,8 +479,9 @@ public final class RegexUtil {
                             if (i < length - 2
                                     && regexp.charAt(i + 2) == '<') { // named capturing group.
                                 group += 1;
-                                if (i != 0 && regexp.charAt(i - 1) == '|')
+                                if (i != 0 && regexp.charAt(i - 1) == '|') {
                                     nonNullGroups.remove(Integer.valueOf(group));
+                                }
                                 openingIndices.push(group);
                                 openingWasGroup.push(true);
                             } else { // non capturing group.
@@ -484,8 +489,9 @@ public final class RegexUtil {
                             }
                         } else { // unnamed capturing group.
                             group += 1;
-                            if (i != 0 && regexp.charAt(i - 1) == '|')
+                            if (i != 0 && regexp.charAt(i - 1) == '|') {
                                 nonNullGroups.remove(Integer.valueOf(group));
+                            }
                             openingIndices.push(group);
                             openingWasGroup.push(true);
                         }
@@ -517,9 +523,13 @@ public final class RegexUtil {
                     int balance = 1;
                     int j;
                     for (j = i + 1; balance > 0; j++) {
-                        if (regexp.charAt(j) == '\\') escaped = !escaped;
-                        else if (regexp.charAt(j) == ']' && !escaped) balance -= 1;
-                        else if (escaped) escaped = false;
+                        if (regexp.charAt(j) == '\\') {
+                            escaped = !escaped;
+                        } else if (regexp.charAt(j) == ']' && !escaped) {
+                            balance -= 1;
+                        } else if (escaped) {
+                            escaped = false;
+                        }
                     }
                     i = j - 1;
                 } else {
@@ -531,7 +541,9 @@ public final class RegexUtil {
                 }
                 i = regexp.indexOf("\\E", i) + 1;
             } else { // any other character.
-                if (escaped) escaped = false;
+                if (escaped) {
+                    escaped = false;
+                }
             }
         }
         return nonNullGroups;
