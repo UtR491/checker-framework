@@ -4,9 +4,11 @@ import java.util.LinkedHashSet;
 import java.util.SortedSet;
 import org.checkerframework.checker.initialization.InitializationChecker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.regex.RegexChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.source.SupportedLintOptions;
+import org.checkerframework.framework.source.SupportedOptions;
 
 /**
  * An implementation of the nullness type-system, parameterized by an initialization type-system for
@@ -32,6 +34,7 @@ import org.checkerframework.framework.source.SupportedLintOptions;
     NullnessChecker.LINT_TRUSTARRAYLENZERO,
     NullnessChecker.LINT_PERMITCLEARPROPERTY
 })
+@SupportedOptions({NullnessChecker.ENABLE_REGEX_CHECKER})
 public class NullnessChecker extends InitializationChecker {
 
     /** Should we be strict about initialization of {@link MonotonicNonNull} variables? */
@@ -67,11 +70,26 @@ public class NullnessChecker extends InitializationChecker {
     /** Default for {@link #LINT_PERMITCLEARPROPERTY}. */
     public static final boolean LINT_DEFAULT_PERMITCLEARPROPERTY = false;
 
+    /**
+     * If this option is specified, the Regex Checker is run as a subchecker of the Nullness Checker
+     * to infer whether calls to {@code Matcher.group(int)} will return NonNull Strings or not.
+     */
+    public static final String ENABLE_REGEX_CHECKER = "enableRegexChecker";
+
+    /**
+     * Whether the {@code -AenableRegexChecker} option was passed on the command line. Do not access
+     * this variable directly, instead call {@link #isRegexCheckerEnabled()}.
+     */
+    private @MonotonicNonNull Boolean regexCheckerEnabled = null;
+
     @Override
     protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
         LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
                 super.getImmediateSubcheckerClasses();
         checkers.add(KeyForSubchecker.class);
+        if (isRegexCheckerEnabled()) {
+            checkers.add(RegexChecker.class);
+        }
         return checkers;
     }
 
@@ -85,5 +103,24 @@ public class NullnessChecker extends InitializationChecker {
     @Override
     protected BaseTypeVisitor<?> createSourceVisitor() {
         return new NullnessVisitor(this);
+    }
+
+    /**
+     * Was the Regex Checker enabled on the command line?
+     *
+     * @return whether the {@code -AenableRegexChecker} option was passed on the command line
+     */
+    private boolean isRegexCheckerEnabled() {
+        if (regexCheckerEnabled == null) {
+            regexCheckerEnabled =
+                    this.processingEnv.getOptions().containsKey(ENABLE_REGEX_CHECKER)
+                            || this.processingEnv
+                                    .getOptions()
+                                    .containsKey(
+                                            this.getClass().getSimpleName()
+                                                    + "_"
+                                                    + ENABLE_REGEX_CHECKER);
+        }
+        return regexCheckerEnabled;
     }
 }

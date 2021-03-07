@@ -12,6 +12,7 @@ import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.lock.qual.GuardSatisfied;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.regex.qual.Regex;
+import org.checkerframework.checker.regex.qual.RegexNNGroups;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -185,7 +186,7 @@ public final class RegexUtil {
      *     nonNullGroups} are definitely non-null when a string matches the regex
      */
     @Pure
-    @EnsuresQualifierIf(result = true, expression = "#1", qualifier = Regex.class)
+    @EnsuresQualifierIf(result = true, expression = "#1", qualifier = RegexNNGroups.class)
     public static boolean isRegex(String s, int groups, int... nonNullGroups) {
         Pattern p;
         try {
@@ -196,9 +197,7 @@ public final class RegexUtil {
         List<Integer> computedNonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
         if (groups <= getGroupCount(p)) {
             for (int e : nonNullGroups) {
-                if (!computedNonNullGroups.contains(e)) {
-                    return false;
-                }
+                if (!computedNonNullGroups.contains(e)) return false;
             }
             return true;
         }
@@ -312,11 +311,9 @@ public final class RegexUtil {
     }
 
     /**
-     * Returns the argument as a {@code @Regex String} if it is a regex with at least the given
-     * number of groups, otherwise throws an error.
-     *
-     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
-     * needed.
+     * Returns the argument as a {@code @RegexNNGroups(groups = groups) String} if it is a regex
+     * with at least the given number of groups, otherwise throws an error. The purpose of this
+     * method is to suppress Regex Checker warnings. It should be very rarely needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
@@ -327,7 +324,7 @@ public final class RegexUtil {
     @SideEffectFree
     // The return type annotation is irrelevant; this method is special-cased by
     // RegexAnnotatedTypeFactory.
-    public static @Regex String asRegex(String s, int groups) {
+    public static @RegexNNGroups String asRegex(String s, int groups) {
         try {
             Pattern p = Pattern.compile(s);
             int actualGroups = getGroupCount(p);
@@ -341,17 +338,16 @@ public final class RegexUtil {
     }
 
     /**
-     * Returns the argument as a {@code @Regex String} if it is a regex with at least the given
-     * number of groups and the groups in {@code nonNullGroups} are guaranteed to match provided
-     * that the regex matches a string, otherwise throws an error.
-     *
-     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be rarely
-     * needed.
+     * Returns the argument as a {@code @RegexNNGroups(groups = groups, nonNullGroups =
+     * nonNullGroups} if it is a regex with at least the given number of groups and the groups in
+     * {@code nonNullGroups} are guaranteed to match provided that the regex matches a string,
+     * otherwise throws an error. The purpose of this method is to suppress Regex Checker warnings.
+     * It should be rarely needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
-     * @param nonNullGroups groups expected to be match some (possibly empty) part of a target
-     *     string when the regex matches
+     * @param nonNullGroups groups expected to be match some part of a target string when the regex
+     *     matches
      * @return its argument
      * @throws Error if argument is not a regex with the specified characteristics
      */

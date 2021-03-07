@@ -43,6 +43,21 @@ These qualifiers make up the Regex type system:
   run-time value could be \<"colo(u?)r"> or \<"(brown|beige)"> but not
   \<"colou?r"> nor a non-regex string such as \<"1) first point">.
 
+\item[\refqualclass{checker/regex/qual}{RegexNNGroups}]
+  indicates that the run-time value is a valid regular expression
+  \code{String}. There are two parameters for the qualifier, \<groups>
+  is the same as the optional parameter for \code{Regex}, \<nonNullGroups>
+  is an array that specifies the capturing groups that are definitely
+  non-null (possibly empty) provided the regular expression matches the
+  target string. For example if an expression's type is
+  \<RegexNNGroups(groups = 2, nonNullGroups = {1})>, then it's run-time
+  value could be \<"colo(u?)r(s)?"> (group 1 will match some possibly-empty
+  part of the string provided that the regular expression itself matches.)
+  but not \<"colo(u)?r(s?)"> (group 1 may or may not match when the regular
+  expression matches some string) nor a
+  non-regex string such as \<"1) first point">. Note that \code{Regex(1)}
+  is exactly the same as \code{RegexNNGroups(groups = 1)}.
+
 \item[\refqualclass{checker/regex/qual}{PolyRegex}]
   indicates qualifier polymorphism.
   For a description of qualifier polymorphism, see
@@ -51,18 +66,30 @@ These qualifiers make up the Regex type system:
 \end{description}
 
 The subtyping hierarchy of the Regex Checker's qualifiers is shown in
-Figure~\ref{fig-regex-hierarchy}.
+Figures~\ref{fig-regex-hierarchy} and ~\ref{fig-regex-hierarchy-2}.
 
 \begin{figure}
 \includeimage{regex}{9cm}
-\caption{The subtyping relationship of the Regex Checker's qualifiers.
-  The type qualifiers are applicable to \<CharSequence> and its subtypes.
+\caption{The subtyping relationship of the \code{Regex} annotation.
+  The type qualifier is applicable to \<CharSequence> and its subtypes.
   Because the parameter to a \<@Regex> qualifier is at least the number of
   capturing groups in a regular expression, a \<@Regex> qualifier with more
   capturing groups is a subtype of a \<@Regex> qualifier with fewer capturing
   groups. Qualifiers in gray are used internally by the type
   system but should never be written by a programmer.}
 \label{fig-regex-hierarchy}
+\end{figure}
+
+\begin{figure}
+\includeimage{regexnngroups}{9cm}
+    \caption{The subtyping relationship of the Regex Checker's qualifiers.
+    The type qualifiers are applicable to \<CharSequence> and its subtypes.
+    The hierarchy of \<@RegexNNGroups> is determined by two independent
+    values. Type A is subtype of type B if A has at least as many capturing
+    groups as B and the array of \<nonNullGroups> in B is a subset of that
+    in A. Qualifiers in gray are used internally by the type system but
+    should never be written by a programmer.}
+\label{fig-regex-hierarchy-2}
 \end{figure}
 
 \sectionAndLabel{Annotating your code with \code{@Regex}}{annotating-with-regex}
@@ -74,11 +101,13 @@ The Regex Checker adds
 implicit qualifiers, reducing the number of annotations that must appear
 in your code (see Section~\ref{effective-qualifier}).
 If a \code{String} literal is a valid regex,
-the checker implicitly adds the \code{@Regex} qualifier with
-the argument set to the correct number of capturing groups.
+the checker implicitly adds the \code{@RegexNNGroups} qualifier with
+the argument set to the correct number of capturing groups and the list
+of groups that are guaranteed to match some (possibly empty) part of a
+matching \code{String}.
 The Regex Checker allows
 the \code{null} literal to be assigned to any type qualified with the
-\code{Regex} qualifier.
+\code{Regex} or \code{RegexNNGroups} qualifier.
 
 
 \subsectionAndLabel{Capturing groups}{regex-capturing-groups}
@@ -88,11 +117,11 @@ to \sunjavadoc{java.base/java/util/regex/Matcher.html}{Matcher}'s
 \sunjavadoc{java.base/java/util/regex/Matcher.html\#group(int)}{group},
 \sunjavadoc{java.base/java/util/regex/Matcher.html\#start(int)}{start} and
 \sunjavadoc{java.base/java/util/regex/Matcher.html\#end(int)}{end} methods. To do this,
-the type of \<Matcher> must be qualified with a \<@Regex> annotation
-with the number of capturing groups in the regular expression. This is
+the type of \<Matcher> must be qualified with a \<@Regex> or \<@RegexNNGroups>
+annotation with the number of capturing groups in the regular expression. This is
 handled implicitly by the Regex Checker for local variables (see
-Section~\ref{type-refinement}), but you may need to add \<@Regex> annotations
-with a capturing group count to \<Pattern> and \<Matcher> fields and
+Section~\ref{type-refinement}), but you may need to add \<@Regex> or \<@RegexNNGroups>
+annotations with a capturing group count to \<Pattern> and \<Matcher> fields and
 parameters.
 
 
@@ -120,9 +149,9 @@ Figure~\ref{fig-regex-partial}.
 \subsectionAndLabel{Testing whether a string is a regular expression}{regexutil-methods}
 
 Sometimes, the Regex Checker cannot infer whether a particular expression
-is a regular expression --- and sometimes your code cannot either!  In
+is a regular expression --- and sometimes your code cannot either! In
 these cases, you can use the \<isRegex> method to perform such a test, and
-other helper methods to provide useful error messages.  A
+other helper methods to provide useful error messages. A
 common use is for user-provided regular expressions (such as ones passed
 on the command-line).
 Figure~\ref{fig-regex-util-example} gives an
@@ -146,10 +175,14 @@ example of the intended use of the \code{RegexUtil} methods.
 
 \end{description}
 
-An additional version of each of these methods is also provided that takes
-an additional group count parameter. The
-\refmethod{checker/regex/util}{RegexUtil}{isRegex}{-java.lang.String-int-} method
-verifies that the argument has at least the given number of groups. The
+Two additional versions of \code{isRegex} method are also provided that take some additional
+parameters. The \refmethod{checker/regex/util}{RegexUtil}{isRegex}{-java.lang.String-int-}
+method takes a String and int as arguments and
+verifies that the String argument has at least the given number of groups. The
+\refmethod{checker/regex/util}{RegexUtil}{isRegex}{-java.lang.String-int-int...-}
+verifies that the String argument has at least the give number of groups and that when it
+matches a \code{String} the groups in the \code{List} are guaranteed to match some
+part of the \code{String}. The
 \refmethod{checker/regex/util}{RegexUtil}{regexError}{-java.lang.String-int-} and
 \refmethod{checker/regex/util}{RegexUtil}{regexException}{-java.lang.String-int-}
 methods return a \<String> error message and \<Pattern\-Syntax\-Exception>,

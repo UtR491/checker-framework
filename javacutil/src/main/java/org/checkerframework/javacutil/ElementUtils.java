@@ -790,8 +790,7 @@ public class ElementUtils {
                         .get(i)
                         .asType()
                         .toString()
-                        .equals(parameters[i].getName())) {
-
+                        .equals(parameters[i].getCanonicalName())) {
                     return false;
                 }
             }
