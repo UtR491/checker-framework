@@ -24,17 +24,17 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @SubtypeOf(Regex.class)
 public @interface RegexNNGroups {
     /**
-     * The number of groups in the regular expression. Defaults to 0.
+     * The number of capturing groups in the regular expression. Defaults to 0.
      *
-     * @return number of capturing groups in the pattern
+     * @return number of capturing groups in the regular expression
      */
     int groups() default 0;
 
     /**
-     * An array of groups other than 0, that are guaranteed to be non-null provided the input String
-     * matches the regular expression. Defaults to an empty list.
+     * The capturing groups other than 0, that are guaranteed to be non-null provided the input
+     * String matches the regular expression. Defaults to an empty list.
      *
-     * @return list of non-null groups
+     * @return the non-null capturing groups
      */
     int[] nonNullGroups() default {};
 }

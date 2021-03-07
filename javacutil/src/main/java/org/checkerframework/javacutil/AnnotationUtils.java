@@ -792,8 +792,6 @@ public class AnnotationUtils {
         return value;
     }
 
-    // TODO Replace all the usages of this version of the function by the one that accepts an
-    //  ExecutableElement instead of a CharSequence.
     /**
      * Get the element with the name {@code elementName} of the annotation {@code anno}, where the
      * element has an array type. An element of the result is expected to have type {@code
@@ -803,6 +801,9 @@ public class AnnotationUtils {
      * annotation values. Finding defaults requires more computation, so should be false when no
      * defaulting is needed.
      *
+     * <p>{@link #getElementValueArray(AnnotationMirror, ExecutableElement, Class, boolean)} is more
+     * efficient than this method.
+     *
      * @param anno the annotation to disassemble
      * @param elementName the name of the element to access
      * @param expectedType the expected type used to cast the return type
@@ -810,6 +811,7 @@ public class AnnotationUtils {
      * @param useDefaults whether to apply default values to the element
      * @return the value of the element with the given name; it is a new list, so it is safe for
      *     clients to side-effect
+     * @see #getElementValueArray(AnnotationMirror, ExecutableElement, Class, boolean)
      */
     public static <T> List<T> getElementValueArray(
             AnnotationMirror anno,
@@ -1065,7 +1067,7 @@ public class AnnotationUtils {
     }
 
     /**
-     * Get the list with name {@code elementName} from the annotation {@code anno}, {@code
+     * Get the list with name {@code elementName} from the annotation {@code anno}. {@code
      * elementName} is of type object because it can be both a String or an ExecutableElement.
      *
      * @param anno the annotation whose element to access

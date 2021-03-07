@@ -296,7 +296,8 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @Regex String} if it is a regex, otherwise throws an error.
-     * The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
+     *
+     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
      * needed.
      *
      * @param s string to check for being a regular expression
@@ -304,6 +305,8 @@ public final class RegexUtil {
      * @throws Error if argument is not a regex
      */
     @SideEffectFree
+    // The return type annotation is irrelevant; it is special-cased by
+    // RegexAnnotatedTypeFactory.
     // The return type annotation is a conservative bound.
     public static @Regex String asRegex(String s) {
         return asRegex(s, 0);
@@ -311,8 +314,10 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @RegexNNGroups(groups = groups) String} if it is a regex
-     * with at least the given number of groups, otherwise throws an error. The purpose of this
-     * method is to suppress Regex Checker warnings. It should be very rarely needed.
+     * with at least the given number of groups, otherwise throws an error.
+     *
+     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
+     * needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
@@ -321,7 +326,7 @@ public final class RegexUtil {
      */
     @SuppressWarnings("regex") // RegexUtil
     @SideEffectFree
-    // The return type annotation is irrelevant; it is special-cased by
+    // The return type annotation is irrelevant; this method is special-cased by
     // RegexAnnotatedTypeFactory.
     public static @RegexNNGroups String asRegex(String s, int groups) {
         try {
@@ -338,20 +343,24 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @RegexNNGroups(groups = groups, nonNullGroups =
-     * nonNullGroups} if it is a regex with at least the given number of groups and the groups in
-     * {@code nonNullGroups} are guaranteed to match provided that the regex matches a string,
-     * otherwise throws an error. The purpose of this method is to suppress Regex Checker warnings.
-     * It should be rarely needed.
+     * nonNullGroups) String} if it is a regex with at least the given number of groups and the
+     * groups in {@code nonNullGroups} are guaranteed to match provided that the regex matches a
+     * string, otherwise throws an error.
+     *
+     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be rarely
+     * needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
-     * @param nonNullGroups groups expected to be match some part of a target string when the regex
-     *     matches
+     * @param nonNullGroups groups expected to be match some (possibly empty) part of a target
+     *     string when the regex matches
      * @return its argument
      * @throws Error if argument is not a regex with the specified characteristics
      */
     @SuppressWarnings("regex")
     @SideEffectFree
+    // The return type annotation is irrelevant; this method is special-cased by
+    // RegexAnnotatedTypeFactory.
     public static @RegexNNGroups String asRegex(String s, int groups, int... nonNullGroups) {
         try {
             Pattern p = Pattern.compile(s);

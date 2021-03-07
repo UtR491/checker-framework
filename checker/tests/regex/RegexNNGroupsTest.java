@@ -92,7 +92,7 @@ public class RegexNNGroupsTest {
             return "";
         }
 
-        // The regex checker concludes that this call is legal, therefore its return type
+        // The Regex Checker concludes that this call is legal, therefore its return type
         // can be @NonNull.
         @NonNull String a = matcher.group(1);
 
