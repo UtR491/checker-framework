@@ -460,14 +460,14 @@ public final class RegexUtil {
          * figure out whether a ')' closes a capturing group or a special construct.
          *
          * <p>If you encounter a '\' it defines some sort of flag or special character. If the '\'
-         * is preceded by another '\', it represents the literal '\'
+         * is preceded by another '\', it represents the literal '\'.
          *
          * <p>If you encounter a '[' and it was not preceded by a '\', it marks the beginning of a
          * literal list. Traverse inside the list till you encounter the closing ']', then resume
          * normal traversal.
          *
-         * <p>If you encounter a 'Q' which is preceded by a '\', it marks the beginning of a quote,
-         * traverse, till you find the corresponding '\E', then resume normal traversal.
+         * <p>If you encounter a 'Q' which is preceded by a '\', it marks the beginning of a quote.
+         * Traverse until you find the corresponding '\E', then resume normal traversal.
          */
         final int length = regexp.length();
         for (int i = 0; i < length; i++) {
