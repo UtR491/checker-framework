@@ -794,12 +794,15 @@ public class AnnotationUtils {
 
     /**
      * Get the element with the name {@code elementName} of the annotation {@code anno}, where the
-     * element has an array type. One element of the result is expected to have type {@code
+     * element has an array type. An element of the result is expected to have type {@code
      * expectedType}.
      *
      * <p>Parameter useDefaults is used to determine whether default values should be used for
      * annotation values. Finding defaults requires more computation, so should be false when no
      * defaulting is needed.
+     *
+     * <p>{@link #getElementValueArray(AnnotationMirror, ExecutableElement, Class, boolean)} is more
+     * efficient than this method.
      *
      * @param anno the annotation to disassemble
      * @param elementName the name of the element to access
@@ -808,6 +811,7 @@ public class AnnotationUtils {
      * @param useDefaults whether to apply default values to the element
      * @return the value of the element with the given name; it is a new list, so it is safe for
      *     clients to side-effect
+     * @see #getElementValueArray(AnnotationMirror, ExecutableElement, Class, boolean)
      */
     public static <T> List<T> getElementValueArray(
             AnnotationMirror anno,
@@ -816,27 +820,40 @@ public class AnnotationUtils {
             boolean useDefaults) {
         @SuppressWarnings("unchecked")
         List<AnnotationValue> la = getElementValue(anno, elementName, List.class, useDefaults);
-        List<T> result = new ArrayList<>(la.size());
-        for (AnnotationValue a : la) {
-            try {
-                result.add(expectedType.cast(a.getValue()));
-            } catch (Throwable t) {
-                String err1 =
-                        String.format(
-                                "getElementValueArray(%n  anno=%s,%n  elementName=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
-                                anno, elementName, expectedType, useDefaults);
-                String err2 =
-                        String.format(
-                                "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
-                                expectedType,
-                                a,
-                                a.getClass(),
-                                a.getValue(),
-                                a.getValue().getClass());
-                throw new BugInCF(err1 + "; " + err2, t);
-            }
-        }
-        return result;
+        return getValueArray(anno, elementName, expectedType, useDefaults, la);
+    }
+
+    /**
+     * Get the element {@code executableElement} of the annotation {@code anno}, where the element
+     * has an array type. An element of the result is expected to have type {@code expectedType}.
+     *
+     * <p>Parameter useDefaults is used to determine whether default values should be used for
+     * annotation values. Finding defaults requires more computation, so should be false when no
+     * defaulting is needed.
+     *
+     * @param anno the annotation to disassemble
+     * @param executableElement the element to access
+     * @param expectedType the expected type used to cast the return type
+     * @param <T> the class of the expected type
+     * @param useDefaults whether to apply default values to the element
+     * @return the value of the element with the given name; it is a new list, so it is safe for
+     *     clients to side-effect
+     */
+    public static <T> List<T> getElementValueArray(
+            AnnotationMirror anno,
+            ExecutableElement executableElement,
+            Class<T> expectedType,
+            boolean useDefaults) {
+        AnnotationValue nonNullGroups = anno.getElementValues().get(executableElement);
+        @SuppressWarnings("unchecked")
+        List<AnnotationValue> la =
+                List.class.cast(
+                        nonNullGroups != null
+                                ? nonNullGroups.getValue()
+                                : useDefaults
+                                        ? executableElement.getDefaultValue().getValue()
+                                        : Collections.EMPTY_LIST);
+        return getValueArray(anno, executableElement, expectedType, useDefaults, la);
     }
 
     /**
@@ -1047,6 +1064,47 @@ public class AnnotationUtils {
         }
 
         return hasTypeUse;
+    }
+
+    /**
+     * Extract the values from the list of annotation values {@code la}. The type of values is
+     * {@code expectedType}. Other arguments are used in diagnostic messages.
+     *
+     * @param anno the annotation whose element to access
+     * @param elementName the name of the element to access
+     * @param expectedType the expected type of the elements of the array element
+     * @param <T> the class of the expected type of the elements of the array element
+     * @param la the list of annotation values which correspond to literals in the array
+     * @param useDefaults whether to apply default values to the element
+     * @return the value of the element with the given name as a {@code List}.
+     */
+    private static <T> List<T> getValueArray(
+            AnnotationMirror anno,
+            Object elementName,
+            Class<T> expectedType,
+            boolean useDefaults,
+            List<AnnotationValue> la) {
+        List<T> result = new ArrayList<>(la.size());
+        for (AnnotationValue a : la) {
+            try {
+                result.add(expectedType.cast(a.getValue()));
+            } catch (Throwable t) {
+                String err1 =
+                        String.format(
+                                "getElementValueArray(%n  anno=%s,%n  elementName=%s,%n  expectedType=%s,%n  useDefaults=%s)%n",
+                                anno, elementName, expectedType, useDefaults);
+                String err2 =
+                        String.format(
+                                "Error in cast:%n  expectedType=%s%n  a=%s [%s]%n  a.getValue()=%s [%s]",
+                                expectedType,
+                                a,
+                                a.getClass(),
+                                a.getValue(),
+                                a.getValue().getClass());
+                throw new BugInCF(err1 + "; " + err2, t);
+            }
+        }
+        return result;
     }
 
     /**
