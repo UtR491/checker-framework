@@ -249,7 +249,7 @@ public class RegexTransfer extends CFTransfer {
      *
      * @param factory the type factory to create types
      * @param nodes arguments passed to the {@code RegexUtil} functions
-     * @return the {@code @RegexNNGroups} annotation.
+     * @return the {@code @RegexNNGroups} annotation
      */
     private AnnotationMirror getRegexNNGroupsAnno(
             RegexAnnotatedTypeFactory factory, List<Node> nodes) {
