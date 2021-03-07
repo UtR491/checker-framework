@@ -219,8 +219,10 @@ public class RegexTransfer extends CFTransfer {
                 new ConditionalTransferResult<>(result.getResultValue(), thenStore, elseStore);
         JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
 
+        if (thenStore.getValue(firstParam) != null) {
+            thenStore.clearValue(firstParam);
+        }
         AnnotationMirror regexNNGroupsAnnotation = getRegexNNGroupsAnno(factory, n.getArguments());
-        if (thenStore.getValue(firstParam) != null) thenStore.clearValue(firstParam);
         thenStore.insertValue(firstParam, regexNNGroupsAnnotation);
         return newResult;
     }
