@@ -448,10 +448,9 @@ public final class RegexUtil {
         // ')' closes a capturing group or some other special construct. If it closes a capturing
         // group, the top element from openingIndices has to be removed.
         ArrayDeque<Boolean> openingWasGroup = new ArrayDeque<>();
-        boolean escaped =
-                false; // The character just before the current one was '\', i.e. the current
-        // character has to be considered either in a literal sense or as some special character
-        // or flag.
+        // If true, the character just before the current one was '\', i.e. the current character
+        // has to be considered either in a literal sense or as some special character or flag.
+        boolean escaped = false;
         int group = 0;
 
         /**
