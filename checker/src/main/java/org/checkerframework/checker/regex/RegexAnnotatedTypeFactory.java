@@ -522,7 +522,6 @@ public class RegexAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                     if (RegexUtil.isRegex(regex)) {
                         int groupCount = getGroupCount(regex);
                         List<Integer> nonNullGroups = RegexUtil.getNonNullGroups(regex, groupCount);
-                        // type.addAnnotation(createRegexAnnotation(groupCount));
                         type.addAnnotation(
                                 createRegexNNGroupsAnnotation(groupCount, nonNullGroups));
                     } else {

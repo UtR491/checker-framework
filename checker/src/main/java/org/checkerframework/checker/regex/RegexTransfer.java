@@ -219,8 +219,10 @@ public class RegexTransfer extends CFTransfer {
                 new ConditionalTransferResult<>(result.getResultValue(), thenStore, elseStore);
         JavaExpression firstParam = JavaExpression.fromNode(n.getArgument(0));
 
+        if (thenStore.getValue(firstParam) != null) {
+            thenStore.clearValue(firstParam);
+        }
         AnnotationMirror regexNNGroupsAnnotation = getRegexNNGroupsAnno(factory, n.getArguments());
-        if (thenStore.getValue(firstParam) != null) thenStore.clearValue(firstParam);
         thenStore.insertValue(firstParam, regexNNGroupsAnnotation);
         return newResult;
     }
@@ -249,7 +251,7 @@ public class RegexTransfer extends CFTransfer {
      *
      * @param factory the type factory to create types
      * @param nodes arguments passed to the {@code RegexUtil} functions
-     * @return the {@code @RegexNNGroups} annotation.
+     * @return the {@code @RegexNNGroups} annotation
      */
     private AnnotationMirror getRegexNNGroupsAnno(
             RegexAnnotatedTypeFactory factory, List<Node> nodes) {

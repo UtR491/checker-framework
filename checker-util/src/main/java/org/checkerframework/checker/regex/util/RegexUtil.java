@@ -197,7 +197,9 @@ public final class RegexUtil {
         List<Integer> computedNonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
         if (groups <= getGroupCount(p)) {
             for (int e : nonNullGroups) {
-                if (!computedNonNullGroups.contains(e)) return false;
+                if (!computedNonNullGroups.contains(e)) {
+                    return false;
+                }
             }
             return true;
         }
@@ -294,7 +296,8 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @Regex String} if it is a regex, otherwise throws an error.
-     * The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
+     *
+     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
      * needed.
      *
      * @param s string to check for being a regular expression
@@ -302,6 +305,8 @@ public final class RegexUtil {
      * @throws Error if argument is not a regex
      */
     @SideEffectFree
+    // The return type annotation is irrelevant; it is special-cased by
+    // RegexAnnotatedTypeFactory.
     // The return type annotation is a conservative bound.
     public static @Regex String asRegex(String s) {
         return asRegex(s, 0);
@@ -309,8 +314,10 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @RegexNNGroups(groups = groups) String} if it is a regex
-     * with at least the given number of groups, otherwise throws an error. The purpose of this
-     * method is to suppress Regex Checker warnings. It should be very rarely needed.
+     * with at least the given number of groups, otherwise throws an error.
+     *
+     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
+     * needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
@@ -319,7 +326,7 @@ public final class RegexUtil {
      */
     @SuppressWarnings("regex") // RegexUtil
     @SideEffectFree
-    // The return type annotation is irrelevant; it is special-cased by
+    // The return type annotation is irrelevant; this method is special-cased by
     // RegexAnnotatedTypeFactory.
     public static @RegexNNGroups String asRegex(String s, int groups) {
         try {
@@ -336,20 +343,24 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @RegexNNGroups(groups = groups, nonNullGroups =
-     * nonNullGroups} if it is a regex with at least the given number of groups and the groups in
-     * {@code nonNullGroups} are guaranteed to match provided that the regex matches a string,
-     * otherwise throws an error. The purpose of this method is to suppress Regex Checker warnings.
-     * It should be rarely needed.
+     * nonNullGroups) String} if it is a regex with at least the given number of groups and the
+     * groups in {@code nonNullGroups} are guaranteed to match provided that the regex matches a
+     * string, otherwise throws an error.
+     *
+     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be rarely
+     * needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
-     * @param nonNullGroups groups expected to be match some part of a target string when the regex
-     *     matches
+     * @param nonNullGroups groups expected to be match some (possibly empty) part of a target
+     *     string when the regex matches
      * @return its argument
      * @throws Error if argument is not a regex with the specified characteristics
      */
     @SuppressWarnings("regex")
     @SideEffectFree
+    // The return type annotation is irrelevant; this method is special-cased by
+    // RegexAnnotatedTypeFactory.
     public static @RegexNNGroups String asRegex(String s, int groups, int... nonNullGroups) {
         try {
             Pattern p = Pattern.compile(s);
@@ -418,12 +429,13 @@ public final class RegexUtil {
 
     /**
      * Returns a list of groups other than 0, that are guaranteed to be non-null given that the
-     * regular expression matches the String. The String argument passed has to be a regular
+     * regular expression matches the String. The String argument passed has to be a valid regular
      * expression.
      *
      * @param regexp pattern to be analysed
      * @param n number of capturing groups in the pattern
-     * @return the groups that are non-null in the argument
+     * @return a {@code List} of groups that are guaranteed to match some part of a string that
+     *     matches {@code regexp}
      * @throws Error if the argument is not a regex
      */
     public static List<Integer> getNonNullGroups(String regexp, int n) {
@@ -433,12 +445,11 @@ public final class RegexUtil {
             throw new Error(e);
         }
         List<Integer> nonNullGroups = new ArrayList<>();
-        // Initialize the list with all elements; the below code will remove the optional ones.
         for (int i = 1; i <= n; i++) {
             nonNullGroups.add(i);
         }
 
-        // Holds all indices of opening brackets that were openings of a capturing group.
+        // Holds all indices of opening parentheses that were openings of a capturing group.
         ArrayDeque<Integer> openingIndices = new ArrayDeque<>();
         // Holds whether the last occurrence of a non-literal '(' was a capturing group (true)
         // or was some other special construct (false). This helps in determining whether a
@@ -446,40 +457,39 @@ public final class RegexUtil {
         // ')' closes a capturing group or some other special construct. If it closes a capturing
         // group, the top element from openingIndices has to be removed.
         ArrayDeque<Boolean> openingWasGroup = new ArrayDeque<>();
-        boolean quoted = false; // The part being traversed now is inside \Q ... \E.
-        boolean escaped =
-                false; // The character just before the current one was '\', i.e. the current
-        // character has to be considered either in a literal sense or as some special character
-        // or flag.
+        // If true, the character just before the current one was '\', i.e. the current character
+        // has to be considered either in a literal sense or as some special character or flag.
+        boolean escaped = false;
         int group = 0;
 
         /**
-         * If you encounter '(' and it is not inside a quote and is not preceded by a '\', then it
-         * is a special group. If it is followed by a '?', it will either be a named capturing group
-         * or some other special construct. A named capturing group has a '<' followed by the '?'.
-         * The boolean stack is to figure out whether a ')' closes a capturing group or a special
-         * construct.
+         * If you encounter '(' and it is not preceded by a '\', then it is a special group. If it
+         * is followed by a '?', it will either be a named capturing group or some other special
+         * construct. A named capturing group has a '<' followed by the '?'. The boolean stack is to
+         * figure out whether a ')' closes a capturing group or a special construct.
          *
-         * <p>If you encounter a '\' and it is not inside a quote, it defines some sort of flag or
-         * special character. If you are inside a quote and '\' is followed immediately by 'E', it
-         * is there to mark the end of the quote so '\' is not there in a literal sense and the
-         * following 'E' can be considered as escaped (i.e. escaped can be assigned true).
+         * <p>If you encounter a '\' it defines some sort of flag or special character. If the '\'
+         * is preceded by another '\', it represents the literal '\'.
          *
-         * <p>If you are not inside a quote and you encounter a '[' and it was not preceded by a
-         * '\', it marks the beginning of a literal list. Traverse inside the list till you
-         * encounter the closing ']', then resume normal traversal.
+         * <p>If you encounter a '[' and it was not preceded by a '\', it marks the beginning of a
+         * literal list. Traverse inside the list till you encounter the closing ']', then resume
+         * normal traversal.
+         *
+         * <p>If you encounter a 'Q' which is preceded by a '\', it marks the beginning of a quote.
+         * Traverse until you find the corresponding '\E', then resume normal traversal.
          */
         final int length = regexp.length();
         for (int i = 0; i < length; i++) {
             if (regexp.charAt(i) == '(') {
-                if (!escaped && !quoted) {
+                if (!escaped) {
                     if (i != length - 1) {
                         if (regexp.charAt(i + 1) == '?') {
                             if (i < length - 2
                                     && regexp.charAt(i + 2) == '<') { // named capturing group.
                                 group += 1;
-                                if (i != 0 && regexp.charAt(i - 1) == '|')
+                                if (i != 0 && regexp.charAt(i - 1) == '|') {
                                     nonNullGroups.remove(Integer.valueOf(group));
+                                }
                                 openingIndices.push(group);
                                 openingWasGroup.push(true);
                             } else { // non capturing group.
@@ -487,17 +497,18 @@ public final class RegexUtil {
                             }
                         } else { // unnamed capturing group.
                             group += 1;
-                            if (i != 0 && regexp.charAt(i - 1) == '|')
+                            if (i != 0 && regexp.charAt(i - 1) == '|') {
                                 nonNullGroups.remove(Integer.valueOf(group));
+                            }
                             openingIndices.push(group);
                             openingWasGroup.push(true);
                         }
                     }
-                } else if (escaped) { // escaped won't be true if quoted is true
-                    escaped = false; // (it can only happen if the current character is 'E'.
+                } else {
+                    escaped = false;
                 }
             } else if (regexp.charAt(i) == ')') {
-                if (!escaped && !quoted) { // ending of a construct.
+                if (!escaped) { // ending of a construct.
                     boolean closesGroup = openingWasGroup.pop();
                     if (closesGroup) {
                         int value = openingIndices.pop();
@@ -510,43 +521,37 @@ public final class RegexUtil {
                             nonNullGroups.remove(Integer.valueOf(value));
                         }
                     }
-                } else if (escaped) {
+                } else {
                     escaped = false;
                 }
             } else if (regexp.charAt(i) == '\\') {
-                if (!quoted) {
-                    escaped =
-                            !escaped; // if it is already escaped, '\' will be matched literally, if
-                    // not, now
-                    // escaped becomes true.
-                } else if (i != length - 1 && regexp.charAt(i + 1) == 'E') {
-                    escaped = true;
-                }
+                escaped = !escaped;
             } else if (regexp.charAt(i) == '[') {
-                if (!escaped && !quoted) {
+                if (!escaped) {
                     int balance = 1;
                     int j;
                     for (j = i + 1; balance > 0; j++) {
-                        if (regexp.charAt(j) == '\\') escaped = !escaped;
-                        else if (regexp.charAt(j) == ']' && !escaped) balance -= 1;
-                        else if (escaped) escaped = false;
+                        if (regexp.charAt(j) == '\\') {
+                            escaped = !escaped;
+                        } else if (regexp.charAt(j) == ']' && !escaped) {
+                            balance -= 1;
+                        } else if (escaped) {
+                            escaped = false;
+                        }
                     }
                     i = j - 1;
-                } else if (escaped) {
+                } else {
                     escaped = false;
                 }
             } else if (regexp.charAt(i) == 'Q') {
-                if (!quoted && escaped) {
+                if (escaped) {
                     escaped = false;
-                    quoted = true;
                 }
-            } else if (regexp.charAt(i) == 'E') {
-                if (quoted && escaped) {
-                    escaped = false;
-                    quoted = false;
-                }
+                i = regexp.indexOf("\\E", i) + 1;
             } else { // any other character.
-                if (escaped) escaped = false;
+                if (escaped) {
+                    escaped = false;
+                }
             }
         }
         return nonNullGroups;
