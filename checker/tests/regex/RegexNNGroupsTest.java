@@ -6,12 +6,9 @@ import org.checkerframework.checker.regex.util.RegexUtil;
 
 public class RegexNNGroupsTest {
     void hierarchyTest() {
-        // legal
         @RegexNNGroups String regexp1 = "(a?).(abc)";
-        // legal
 
         @RegexNNGroups(groups = 2) String regexp2 = "(a?).(abc)";
-        // legal
         @RegexNNGroups(
                 groups = 2,
                 nonNullGroups = {1, 2})
@@ -21,7 +18,6 @@ public class RegexNNGroupsTest {
                 nonNullGroups = {1, 2})
         // :: error: (assignment.type.incompatible)
         String regexp4 = "(a?).(abc)";
-        // legal
         @RegexNNGroups(
                 groups = 2,
                 nonNullGroups = {2})
@@ -64,12 +60,10 @@ public class RegexNNGroupsTest {
         @RegexNNGroups(groups = 1)
         // :: error: (assignment.type.incompatible)
         String s12 = "[(abc)[xyz[^p-q]]]";
-        // legal
         @RegexNNGroups String s13c = "[a[a](abc)]]"; // (abc) is not a group.
         @RegexNNGroups(groups = 1)
         // :: error: (assignment.type.incompatible)
         String s13 = "[a[a](abc)]]";
-        // legal
         @RegexNNGroups(
                 groups = 1,
                 nonNullGroups = {1})
@@ -85,7 +79,6 @@ public class RegexNNGroupsTest {
             Pattern p = Pattern.compile(s);
             Matcher m = p.matcher("abc");
             if (m.matches()) {
-                // legal
                 return m.group(3);
             }
         }
@@ -99,7 +92,7 @@ public class RegexNNGroupsTest {
             return "";
         }
 
-        // The regex checker concludes that this call is legal, therefore its return type
+        // The Regex Checker concludes that this call is legal, therefore its return type
         // can be @NonNull.
         @NonNull String a = matcher.group(1);
 

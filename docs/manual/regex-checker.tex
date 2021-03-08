@@ -44,19 +44,20 @@ These qualifiers make up the Regex type system:
   \<"colou?r"> nor a non-regex string such as \<"1) first point">.
 
 \item[\refqualclass{checker/regex/qual}{RegexNNGroups}]
-  indicates that the run-time value is a valid regular expression
-  \code{String}. There are two parameters for the qualifier, \<groups>
-  is the same as the optional parameter for \code{Regex}, \<nonNullGroups>
-  is an array that specifies the capturing groups that are definitely
-  non-null (possibly empty) provided the regular expression matches the
-  target string. For example if an expression's type is
-  \<RegexNNGroups(groups = 2, nonNullGroups = {1})>, then it's run-time
+  indicates that the run-time value is a valid regular expression.  There
+  are two elements/arguments:  \<groups> is the same as the optional
+  parameter for \code{@Regex}, and \<nonNullGroups> specifies the capturing
+  groups that are definitely non-null (possibly empty) provided the regular
+  expression matches the target string.  Note that \code{@Regex(1)} is
+  exactly the same as \code{RegexNNGroups(groups = 1)}.
+
+  As an example, if an expression's type is
+  \<RegexNNGroups(groups = 2, nonNullGroups = {1})>, then its run-time
   value could be \<"colo(u?)r(s)?"> (group 1 will match some possibly-empty
   part of the string provided that the regular expression itself matches.)
   but not \<"colo(u)?r(s?)"> (group 1 may or may not match when the regular
   expression matches some string) nor a
-  non-regex string such as \<"1) first point">. Note that \code{Regex(1)}
-  is exactly the same as \code{RegexNNGroups(groups = 1)}.
+  non-regex string such as \<"1) first point">.
 
 \item[\refqualclass{checker/regex/qual}{PolyRegex}]
   indicates qualifier polymorphism.
@@ -66,11 +67,11 @@ These qualifiers make up the Regex type system:
 \end{description}
 
 The subtyping hierarchy of the Regex Checker's qualifiers is shown in
-Figures~\ref{fig-regex-hierarchy} and ~\ref{fig-regex-hierarchy-2}.
+Figures~\ref{fig-regex-hierarchy} and~\ref{fig-regex-hierarchy-2}.
 
 \begin{figure}
 \includeimage{regex}{9cm}
-\caption{The subtyping relationship of the \code{Regex} annotation.
+\caption{The subtyping relationship of the \code{@Regex} annotation.
   The type qualifier is applicable to \<CharSequence> and its subtypes.
   Because the parameter to a \<@Regex> qualifier is at least the number of
   capturing groups in a regular expression, a \<@Regex> qualifier with more
@@ -86,7 +87,7 @@ Figures~\ref{fig-regex-hierarchy} and ~\ref{fig-regex-hierarchy-2}.
     The type qualifiers are applicable to \<CharSequence> and its subtypes.
     The hierarchy of \<@RegexNNGroups> is determined by two independent
     values. Type A is subtype of type B if A has at least as many capturing
-    groups as B and the array of \<nonNullGroups> in B is a subset of that
+    groups as B and \<nonNullGroups> in B is a subset of that
     in A. Qualifiers in gray are used internally by the type system but
     should never be written by a programmer.}
 \label{fig-regex-hierarchy-2}
@@ -107,7 +108,7 @@ of groups that are guaranteed to match some (possibly empty) part of a
 matching \code{String}.
 The Regex Checker allows
 the \code{null} literal to be assigned to any type qualified with the
-\code{Regex} or \code{RegexNNGroups} qualifier.
+\code{@Regex} or \code{@RegexNNGroups} qualifier.
 
 
 \subsectionAndLabel{Capturing groups}{regex-capturing-groups}
