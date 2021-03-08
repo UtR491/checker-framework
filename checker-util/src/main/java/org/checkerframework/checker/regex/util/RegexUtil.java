@@ -445,7 +445,9 @@ public final class RegexUtil {
         try {
             Pattern p = Pattern.compile(regexp);
             int actualGroups = getGroupCount(p);
-            if (actualGroups < n) throw new Error(regexErrorMessage(regexp, n, actualGroups));
+            if (actualGroups < n) {
+                throw new Error(regexErrorMessage(regexp, n, actualGroups));
+            }
         } catch (PatternSyntaxException e) {
             throw new Error(e);
         }
@@ -536,8 +538,9 @@ public final class RegexUtil {
                 if (closesCapturingGroup) {
                     Integer closedGroupIndex = unclosedCapturingGroups.pop();
                     if ((i < length - 1 && "?*|".contains(String.valueOf(regexp.charAt(i + 1))))
-                            || (i < length - 2 && regexp.startsWith("{0", i + 1)))
+                            || (i < length - 2 && regexp.startsWith("{0", i + 1))) {
                         nonNullGroups.remove(closedGroupIndex);
+                    }
                 }
             } else if (regexp.charAt(i) == '[') {
                 int balance = 1, j;
@@ -575,7 +578,9 @@ public final class RegexUtil {
      */
     private static int resumeFromHere(String regexp, int st) {
         int length = regexp.length();
-        if (st < length - 1 && regexp.charAt(st + 1) != 'Q') return st + 1;
+        if (st < length - 1 && regexp.charAt(st + 1) != 'Q') {
+            return st + 1;
+        }
         return regexp.indexOf("\\E", st) + 1;
     }
 }
