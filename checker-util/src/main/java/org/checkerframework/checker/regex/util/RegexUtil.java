@@ -197,7 +197,9 @@ public final class RegexUtil {
         List<Integer> computedNonNullGroups = getNonNullGroups(p.pattern(), getGroupCount(p));
         if (groups <= getGroupCount(p)) {
             for (int e : nonNullGroups) {
-                if (!computedNonNullGroups.contains(e)) return false;
+                if (!computedNonNullGroups.contains(e)) {
+                    return false;
+                }
             }
             return true;
         }
@@ -312,8 +314,10 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @RegexNNGroups(groups = groups) String} if it is a regex
-     * with at least the given number of groups, otherwise throws an error. The purpose of this
-     * method is to suppress Regex Checker warnings. It should be very rarely needed.
+     * with at least the given number of groups, otherwise throws an error.
+     *
+     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
+     * needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
@@ -339,15 +343,17 @@ public final class RegexUtil {
 
     /**
      * Returns the argument as a {@code @RegexNNGroups(groups = groups, nonNullGroups =
-     * nonNullGroups} if it is a regex with at least the given number of groups and the groups in
-     * {@code nonNullGroups} are guaranteed to match provided that the regex matches a string,
-     * otherwise throws an error. The purpose of this method is to suppress Regex Checker warnings.
-     * It should be rarely needed.
+     * nonNullGroups) String} if it is a regex with at least the given number of groups and the
+     * groups in {@code nonNullGroups} are guaranteed to match provided that the regex matches a
+     * string, otherwise throws an error.
+     *
+     * <p>The purpose of this method is to suppress Regex Checker warnings. It should be rarely
+     * needed.
      *
      * @param s string to check for being a regular expression
      * @param groups number of groups expected
-     * @param nonNullGroups groups expected to be match some part of a target string when the regex
-     *     matches
+     * @param nonNullGroups groups expected to be match some (possibly empty) part of a target
+     *     string when the regex matches
      * @return its argument
      * @throws Error if argument is not a regex with the specified characteristics
      */
@@ -355,7 +361,7 @@ public final class RegexUtil {
     @SideEffectFree
     // The return type annotation is irrelevant; this method is special-cased by
     // RegexAnnotatedTypeFactory.
-    public static @Regex String asRegex(String s, int groups, int... nonNullGroups) {
+    public static @RegexNNGroups String asRegex(String s, int groups, int... nonNullGroups) {
         try {
             List<Integer> actualNonNullGroups = getNonNullGroups(s, groups);
             boolean containsAll = true;
