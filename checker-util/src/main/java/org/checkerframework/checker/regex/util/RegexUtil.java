@@ -543,9 +543,8 @@ public final class RegexUtil {
                 boolean closesCapturingGroup = lastUnclosedWasCapturingGroup.pop();
                 if (closesCapturingGroup) {
                     Integer closedGroupIndex = unclosedCapturingGroups.pop();
-                    nonNullGroups.remove(closedGroupIndex);
                     if ((i < length - 1 && "?*|".contains(String.valueOf(regexp.charAt(i + 1))))
-                            || (i < length - 2 && regexp.substring(i + 1, i + 2).equals("{0")))
+                            || (i < length - 2 && regexp.startsWith("{0", i + 1)))
                         nonNullGroups.remove(closedGroupIndex);
                 }
             } else if (regexp.charAt(i) == '[') {
