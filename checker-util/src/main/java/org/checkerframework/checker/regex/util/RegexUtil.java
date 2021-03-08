@@ -457,14 +457,8 @@ public final class RegexUtil {
         }
 
         // ArrayDeque here is used as a stack.
-        // We need stack functionality because brackets that were opened last need to be closed
-        // first.
-        // The unclosedCapturingGroups stack helps us keep track of which groups are still
-        // not closed.
-        // The lastUnclosedWasCapturingGroup stack helps us to know whether the last '(' encountered
-        // was a capturing group or a non-capturing group. We need to know this because when we
-        // encounter a ')', we should know whether we are closing a capturing group or a
-        // non-capturing group.
+        // We need stack functionality because brackets that were last opened during the traversal
+        // need to be closed first.
 
         // Indices of the groups that are currently not closed. It is a ArrayDeque which is used as
         // a stack.
@@ -473,8 +467,8 @@ public final class RegexUtil {
         // We know ')' closes a capturing group from our boolean stack.
         ArrayDeque<Integer> unclosedCapturingGroups = new ArrayDeque<>();
 
-        // Whether the last occurrence of '(' in the regex marked a capturing group (true) or a
-        // non-capturing group (false).
+        // Stores whether the last occurrence of '(' in the regex marked a capturing group (true) or
+        // a non-capturing group (false).
         // Element is pushed to it when a '(' is encountered. If it is a capturing group (named or
         // unnamed), push true otherwise push false.
         // Element is popped from it when a ')' is encountered. If the popped element is true, it
@@ -483,12 +477,12 @@ public final class RegexUtil {
         ArrayDeque<Boolean> lastUnclosedWasCapturingGroup = new ArrayDeque<>();
 
         // Number of capturing groups encountered. Used for numbering of the capturing groups.
-        // Increments every time a '(' that opens a capturing group is encountered. This is the
-        // value that is pushed onto the Integer deque.
+        // Increments every time a '(' that opens a capturing group is encountered during the
+        // traversal. This is the value that is pushed onto the Integer deque.
         int group = 0;
 
-        // Optional group here means the ith capturing group, which may not match any part of a text
-        // that matched the regular expression and thus may return null on calls to
+        // Optional group here onwards means the ith capturing group, which may not match any part
+        // of a text that matched the regular expression and thus may return null on calls to
         // matcher.group(i).
 
         // If you encounter '(', check the next character. If it is a '?', it is a special
@@ -524,23 +518,15 @@ public final class RegexUtil {
         final int length = regexp.length();
         for (int i = 0; i < length; i++) {
             if (regexp.charAt(i) == '(') {
-                boolean capturingGroup = false;
-                if (i < length - 1 && regexp.charAt(i + 1) == '?') {
-                    if (i < length - 2 && regexp.charAt(i + 2) == '<') { // named capturing group.
-                        group += 1;
-                        unclosedCapturingGroups.push(group);
-                        lastUnclosedWasCapturingGroup.push(true);
-                        capturingGroup = true;
-                    } else { // non-capturing group.
-                        lastUnclosedWasCapturingGroup.push(false);
-                    }
-                } else { // unnamed capturing group.
+                boolean isCapturingGroup = false;
+                if ((i < length - 1)
+                        && (regexp.startsWith("?<", i + 1) || regexp.charAt(i + 1) != '?')) {
                     group += 1;
                     unclosedCapturingGroups.push(group);
-                    lastUnclosedWasCapturingGroup.push(true);
-                    capturingGroup = true;
+                    isCapturingGroup = true;
                 }
-                if (capturingGroup) {
+                lastUnclosedWasCapturingGroup.push(isCapturingGroup);
+                if (isCapturingGroup) {
                     if (i > 0 && regexp.charAt(i - 1) == '|') {
                         nonNullGroups.remove(Integer.valueOf(group));
                     }
@@ -555,10 +541,22 @@ public final class RegexUtil {
                 }
             } else if (regexp.charAt(i) == '[') {
                 int balance = 1, j;
+                // the loop starts from i+2 because the character class cannot be empty. "[]]" is a
+                // valid regex.
                 for (j = i + 1; j < length && balance > 0; j++) {
-                    if (regexp.charAt(j) == '[') balance += 1;
-                    else if (regexp.charAt(j) == ']') balance -= 1;
-                    else if (regexp.charAt(j) == '\\') j = resumeFromHere(regexp, j);
+                    if (regexp.charAt(j) == '[') {
+                        balance += 1;
+                    } else if (regexp.charAt(j) == ']') {
+                        // in "[]]", the first ']' is considered literally.
+                        // Similarly in "[[]]], the first ']' is considered literally.
+                        // in "[][]]]", the first and second ']' are considered literally.
+                        // Thus ']' that immediately follows a '[' does not close a character class.
+                        if (regexp.charAt(j - 1) != '[') {
+                            balance -= 1;
+                        }
+                    } else if (regexp.charAt(j) == '\\') {
+                        j = resumeFromHere(regexp, j);
+                    }
                 }
                 i = j - 1;
             } else if (regexp.charAt(i) == '\\') {

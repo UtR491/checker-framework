@@ -68,6 +68,22 @@ public class RegexNNGroupsTest {
                 groups = 1,
                 nonNullGroups = {1})
         String s = "\\\\include\\{(.*)\\}";
+        @RegexNNGroups(groups = 3)
+        // :: error: (assignment.type.incompatible)
+        String s14 = "[(a-d&&[^x-z]&&[()\\\\(\\)])]|(abc)";
+
+        @RegexNNGroups(
+                groups = 1,
+                nonNullGroups = {1})
+        // :: error: (assignment.type.incompatible)
+        String s15 = "[(a-d&&[^x-z]&&[()\\\\(\\)])]|(abc)";
+
+        @RegexNNGroups(groups = 1) String s16 = "[(a-d&&[^x-z]&&[()\\\\(\\)])]|(abc)";
+        @RegexNNGroups(groups = 0) String s17 = "[])]";
+        @RegexNNGroups(
+                groups = 1,
+                nonNullGroups = {1})
+        String s18 = "([(\\Q()\\E)])\\d[^\\d]";
     }
 
     String s = "(abc)(def)?(?<alpha>alpha)?.";
