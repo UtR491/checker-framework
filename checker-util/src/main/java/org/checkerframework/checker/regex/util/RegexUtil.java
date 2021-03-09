@@ -313,8 +313,8 @@ public final class RegexUtil {
     }
 
     /**
-     * Returns the argument as a {@code @RegexNNGroups(groups = groups) String} if it is a regex
-     * with at least the given number of groups, otherwise throws an error.
+     * Returns the argument as a {@code @Regex(groups) String} if it is a regex with at least the
+     * given number of groups, otherwise throws an error.
      *
      * <p>The purpose of this method is to suppress Regex Checker warnings. It should be very rarely
      * needed.
@@ -328,7 +328,7 @@ public final class RegexUtil {
     @SideEffectFree
     // The return type annotation is irrelevant; this method is special-cased by
     // RegexAnnotatedTypeFactory.
-    public static @RegexNNGroups String asRegex(String s, int groups) {
+    public static @Regex String asRegex(String s, int groups) {
         try {
             Pattern p = Pattern.compile(s);
             int actualGroups = getGroupCount(p);

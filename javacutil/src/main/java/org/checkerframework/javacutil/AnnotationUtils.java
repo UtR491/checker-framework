@@ -1067,8 +1067,8 @@ public class AnnotationUtils {
     }
 
     /**
-     * Get the list with name {@code elementName} from the annotation {@code anno}. {@code
-     * elementName} is of type object because it can be both a String or an ExecutableElement.
+     * Extract the values from the list of annotation values {@code la}. The type of values is
+     * {@code expectedType}. Other arguments are used in diagnostic messages.
      *
      * @param anno the annotation whose element to access
      * @param elementName the name of the element to access
